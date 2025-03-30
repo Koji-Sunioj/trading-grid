@@ -19,7 +19,7 @@ def handler(event, context):
     match route_key:
 
         case "POST /sign-up":
-            print(event)
+            print(event["body"])
 
     response_object['statusCode'] = 200
     response_object['body'] = json.dumps(
