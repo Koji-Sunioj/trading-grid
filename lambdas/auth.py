@@ -23,11 +23,13 @@ def handler(event, context):
                     "UserAttributes": [{"Name": "email", "Value": body["email"]}, {"Name": "custom:erp_module", "Value": "purchase_orders"}]
                 }
                 cognito_response = cognito.sign_up(**params)
-                if cognito_response["HTTPStatusCode"] == 200:
+
+                if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                     response['statusCode'] = 200
                     response["body"] = "user created. please check your email for verififcation code."
                 else:
                     raise Exception("there was an error creating your account")
+
     except Exception as error:
         response['statusCode'] = 400
         response["body"] = error
