@@ -4,6 +4,8 @@ import json
 
 dynamodb = boto3.resource('dynamodb')
 
+# hello
+
 
 def handler(event, context):
     print(os.environ.get('TABLE_NAME'))
