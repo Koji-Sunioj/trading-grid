@@ -20,4 +20,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
         run: |
+          zip -r functions.zip *.py
           ls -l
+          aws s3api put-object --bucket $AWS_S3_BUCKET --key functions.zip --body functions.zip
