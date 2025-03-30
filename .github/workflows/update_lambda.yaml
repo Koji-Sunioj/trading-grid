@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,7 +22,6 @@ jobs:
           AUTH_LAMBDA: ${{ secrets.AUTH_LAMBDA }}
         run: |
           zip -r functions.zip *.py
-          ls -l
           aws s3api put-object --region eu-north-1 --bucket $AWS_S3_BUCKET --key functions.zip --body functions.zip
           aws lambda update-function-code --region eu-north-1 \
           --function-name $AUTH_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip

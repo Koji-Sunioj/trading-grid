@@ -15,7 +15,11 @@ def handler(event, context):
     # results = table.scan()
     # print(results)
     # Return response object
-    print(route_key)
+
+    match route_key:
+
+        case "POST /sign-up":
+            print(event)
 
     response_object['statusCode'] = 200
     response_object['body'] = json.dumps(

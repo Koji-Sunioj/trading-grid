@@ -9,6 +9,7 @@ export const LandingPage = () => {
       target: {
         username: { value: username },
         password: { value: password },
+        email: { value: email },
       },
     } = event;
 
@@ -16,7 +17,11 @@ export const LandingPage = () => {
       "https://he4kvhieuh.execute-api.eu-north-1.amazonaws.com/prod/sign-up",
       {
         method: "POST",
-        body: JSON.stringify({ username: username, password: password }),
+        body: JSON.stringify({
+          username: username,
+          password: password,
+          email: email,
+        }),
       }
     );
     const something = await response.json();
