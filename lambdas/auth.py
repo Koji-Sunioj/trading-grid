@@ -20,6 +20,7 @@ def handler(event, context):
     response_object['headers']['Content-Type'] = 'application/json'
     response_object['headers']["Access-Control-Allow-Origin"] = "*"
     response_object['headers']["Access-Control-Allow-Methods"] = "*"
-    response_object['body'] = json.dumps({"fuck": event['resource'],"shit":event["httpMethod"]})
+    response_object['body'] = json.dumps(
+        {"resource": event['resource'], "method": event["httpMethod"]})
 
     return response_object
