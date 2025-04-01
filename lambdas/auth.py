@@ -24,6 +24,8 @@ def handler(event, context):
                 }
                 cognito_response = cognito.sign_up(**params)
 
+                print(cognito_response)
+
                 if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                     response['statusCode'] = 200
                     response["body"] = "user created. please check your email for verififcation code."
