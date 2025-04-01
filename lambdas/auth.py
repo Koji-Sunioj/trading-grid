@@ -9,7 +9,7 @@ response['headers'] = {"Content-Type": "application/json",
 
 def handler(event, context):
     route_key = "%s %s" % (event["httpMethod"], event['resource'])
-    if "body" in event:
+    if event["body"] != None:
         body = json.loads(event["body"])
         cognito = boto3.client("cognito-idp")
     else:
