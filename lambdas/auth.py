@@ -28,7 +28,8 @@ def handler(event, context):
 
                 if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                     response['statusCode'] = 200
-                    response["body"] = "user created. please check your email for verififcation code."
+                    response["body"] = {
+                        "message": "user created. please check your email for verififcation code."}
                 else:
                     raise Exception("there was an error creating your account")
 
