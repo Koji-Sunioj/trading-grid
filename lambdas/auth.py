@@ -9,12 +9,16 @@ response['headers'] = {"Content-Type": "application/json",
 
 def handler(event, context):
     route_key = "%s %s" % (event["httpMethod"], event['resource'])
+    if "body" in event:
+        body = json.loads(event["body"])
+        cognito = boto3.client("cognito-idp")
+    else:
+        raise Exception("there was no body in request")
 
     try:
         match route_key:
             case "POST /sign-up":
-                body = json.loads(event["body"])
-                cognito = boto3.client("cognito-idp")
+
                 params = {
                     "ClientId": os.environ.get('USER_POOL_ID'),
                     "Username": body["username"],
@@ -29,13 +33,17 @@ def handler(event, context):
                         "message": "user created. please check your email for verififcation code."})
                 else:
                     raise Exception("there was an error creating your account")
+            case "PATCH /sign-up":
+                print("asdasd")
 
     except Exception as error:
+        error_message = "an error occurred U+1F602"
 
         match error.__class__.__name__:
             case "UsernameExistsException":
-                print(error.__class__.__module__)
                 error_message = error.__dict__["response"]["message"]
+            case "Exception":
+                error_message = error.__str__()
 
         response['statusCode'] = 400
         response["body"] = json.dumps({"message": error_message})

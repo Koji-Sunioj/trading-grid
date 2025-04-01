@@ -1,44 +1,20 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 
-export const LandingPage = () => {
-  const [formState, setFormState] = useState({ disabled: false });
-
-  const signUp = async (event) => {
-    //document.getElementById("form-fieldset").disabled = true;
-    event.preventDefault();
-    const {
-      target: {
-        username: { value: username },
-        password: { value: password },
-        email: { value: email },
-      },
-    } = event;
-
-    const response = await fetch(
-      "https://4qflcoqbxl.execute-api.eu-north-1.amazonaws.com/prod/sign-up",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          username: username,
-          password: password,
-          email: email,
-        }),
-      }
-    );
-    const { message } = await response.json();
-    alert(message);
-    //document.getElementById("form-fieldset").disabled = false;
-  };
+export const ConfirmSignUp = () => {
+  const navigate = useNavigate();
 
   return (
     <div>
       <div class="has-text-centered mb-4">
         <h1 class="title">Welcome to the Trading Grid</h1>
-        <h2 class="subtitle">Sign in to access your ERP modules.</h2>
+        <h2 class="subtitle">
+          Confirm sign up. Check your email for verification code.
+        </h2>
       </div>
       <div>
         <div class="sign-in">
-          <form onSubmit={signUp}>
+          <form>
             <fieldset id="form-fieldset">
               <div class="field">
                 <p class="control">
@@ -78,7 +54,19 @@ export const LandingPage = () => {
               </div>
               <div class="field">
                 <p class="control">
-                  <button class="button is-success">Login</button>
+                  <input
+                    class="input"
+                    type="text"
+                    placeholder="verification code"
+                    name="verification"
+                    pattern="[0-9]{6}"
+                    required
+                  ></input>
+                </p>
+              </div>
+              <div class="field">
+                <p class="control">
+                  <button class="button is-success">Confirm Sign up</button>
                 </p>
               </div>
             </fieldset>
