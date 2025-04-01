@@ -34,6 +34,7 @@ def handler(event, context):
                     raise Exception("there was an error creating your account")
 
     except Exception as error:
+        print(error)
         response['statusCode'] = 400
         response["body"] = error
 
