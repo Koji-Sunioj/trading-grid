@@ -4,7 +4,7 @@ export const LandingPage = () => {
   const [formState, setFormState] = useState({ disabled: false });
 
   const signUp = async (event) => {
-    document.getElementById("form-fieldset").disabled = true;
+    //document.getElementById("form-fieldset").disabled = true;
     event.preventDefault();
     const {
       target: {
@@ -25,9 +25,9 @@ export const LandingPage = () => {
         }),
       }
     );
-    const something = await response.json();
-    console.log(something);
-    document.getElementById("form-fieldset").disabled = false;
+    const { message } = await response.json();
+    alert(message);
+    //document.getElementById("form-fieldset").disabled = false;
   };
 
   return (

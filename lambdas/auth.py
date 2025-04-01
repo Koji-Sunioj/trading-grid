@@ -12,7 +12,6 @@ def handler(event, context):
 
     try:
         match route_key:
-
             case "POST /sign-up":
                 body = json.loads(event["body"])
                 cognito = boto3.client("cognito-idp")
@@ -24,8 +23,6 @@ def handler(event, context):
                 }
                 cognito_response = cognito.sign_up(**params)
 
-                print(cognito_response)
-
                 if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                     response['statusCode'] = 200
                     response["body"] = {
@@ -34,10 +31,10 @@ def handler(event, context):
                     raise Exception("there was an error creating your account")
 
     except Exception as error:
-        print(error.__str__)
 
-        match error.__class__.__module__:
+        match error.__class__.__name__:
             case "UsernameExistsException":
+                print(error.__class__.__module__)
                 error_message = error.__dict__["response"]["message"]
 
         response['statusCode'] = 400
