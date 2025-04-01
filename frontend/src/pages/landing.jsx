@@ -15,7 +15,7 @@ export const LandingPage = () => {
     } = event;
 
     const response = await fetch(
-      "https://he4kvhieuh.execute-api.eu-north-1.amazonaws.com/prod/sign-up",
+      "https://4qflcoqbxl.execute-api.eu-north-1.amazonaws.com/prod/sign-up",
       {
         method: "POST",
         body: JSON.stringify({
