@@ -4,6 +4,40 @@ import { useNavigate } from "react-router";
 export const ConfirmSignUp = () => {
   const navigate = useNavigate();
 
+  const confirmSignUp = async (event) => {
+    //document.getElementById("form-fieldset").disabled = true;
+    event.preventDefault();
+    const {
+      target: {
+        username: { value: username },
+        password: { value: password },
+        email: { value: email },
+        verification: { value: verification },
+      },
+    } = event;
+
+    const response = await fetch(
+      "https://4qflcoqbxl.execute-api.eu-north-1.amazonaws.com/prod/sign-up",
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          username: username,
+          password: password,
+          email: email,
+          verification: verification,
+        }),
+      }
+    );
+
+    const { status } = response;
+    const { message } = await response.json();
+    alert(message);
+    //if (status === 200) {
+    //  navigate("/");
+    //}
+    //document.getElementById("form-fieldset").disabled = false;
+  };
+
   return (
     <div>
       <div class="has-text-centered mb-4">
@@ -14,7 +48,7 @@ export const ConfirmSignUp = () => {
       </div>
       <div>
         <div class="sign-in">
-          <form>
+          <form onSubmit={confirmSignUp}>
             <fieldset id="form-fieldset">
               <div class="field">
                 <p class="control">

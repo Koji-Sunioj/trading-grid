@@ -3,8 +3,8 @@ import boto3
 import json
 
 response = {}
-response['headers'] = {"Content-Type": "application/json",
-                       "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "*"}
+response['headers'] = {"Access-Control-Allow-Origin": "*",
+                       "Access-Control-Allow-Methods": "*"}
 
 
 def handler(event, context):
@@ -33,8 +33,13 @@ def handler(event, context):
                         "message": "user created. please check your email for verififcation code."})
                 else:
                     raise Exception("there was an error creating your account")
+
             case "PATCH /sign-up":
-                print("asdasd")
+                response['statusCode'] = 200
+                response["body"] = json.dumps({"message": "hello bitch"})
+
+            case _:
+                raise Exception("no matching resource")
 
     except Exception as error:
         error_message = "an error occurred U+1F602"
