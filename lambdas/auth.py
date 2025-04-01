@@ -36,7 +36,8 @@ def handler(event, context):
     except Exception as error:
 
         print(type(error))
-        print(error.__class__)
+        print(error.__class__.__name__)
+        print(error.__class__.__module__)
         print(error.__cause__)
         print(error.__dict__)
         print(error.__doc__)
