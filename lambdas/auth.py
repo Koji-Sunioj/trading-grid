@@ -8,14 +8,14 @@ response['headers'] = {"Content-Type": "application/json",
 
 
 def handler(event, context):
-    route_key = "%s %s" % (event["httpMethod"], event['resource'])
-    if event["body"] != None:
-        body = json.loads(event["body"])
-        cognito = boto3.client("cognito-idp")
-    else:
-        raise Exception("there was no body in request")
-
     try:
+        if event["body"] != None:
+            body = json.loads(event["body"])
+            cognito = boto3.client("cognito-idp")
+            route_key = "%s %s" % (event["httpMethod"], event['resource'])
+        else:
+            raise Exception("there was no body in request")
+
         match route_key:
             case "POST /sign-up":
 

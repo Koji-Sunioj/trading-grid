@@ -5,7 +5,7 @@ export const SignUp = () => {
   const navigate = useNavigate();
 
   const signUp = async (event) => {
-    document.getElementById("form-fieldset").disabled = true;
+    //document.getElementById("form-fieldset").disabled = true;
     event.preventDefault();
     const {
       target: {
@@ -33,7 +33,7 @@ export const SignUp = () => {
     if (status === 200) {
       navigate("/sign-up/confirm");
     }
-    document.getElementById("form-fieldset").disabled = false;
+    //document.getElementById("form-fieldset").disabled = false;
   };
 
   return (
