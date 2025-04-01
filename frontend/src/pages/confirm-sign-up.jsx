@@ -10,8 +10,6 @@ export const ConfirmSignUp = () => {
     const {
       target: {
         username: { value: username },
-        password: { value: password },
-        email: { value: email },
         verification: { value: verification },
       },
     } = event;
@@ -22,8 +20,6 @@ export const ConfirmSignUp = () => {
         method: "PATCH",
         body: JSON.stringify({
           username: username,
-          password: password,
-          email: email,
           verification: verification,
         }),
       }
@@ -58,30 +54,6 @@ export const ConfirmSignUp = () => {
                     name="username"
                     placeholder="username"
                     pattern="[A-Za-z_]{8,}"
-                    required
-                  ></input>
-                </p>
-              </div>
-              <div class="field">
-                <p class="control">
-                  <input
-                    class="input"
-                    type="email"
-                    name="email"
-                    placeholder="email address"
-                    pattern=".+@.+\..+"
-                    required
-                  ></input>
-                </p>
-              </div>
-              <div class="field">
-                <p class="control">
-                  <input
-                    class="input"
-                    type="password"
-                    placeholder="password"
-                    name="password"
-                    pattern="[A-Za-z0-9]{8,}"
                     required
                   ></input>
                 </p>

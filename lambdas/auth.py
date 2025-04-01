@@ -18,7 +18,6 @@ def handler(event, context):
 
         match route_key:
             case "POST /sign-up":
-
                 params = {
                     "ClientId": os.environ.get('USER_POOL_ID'),
                     "Username": body["username"],
@@ -35,14 +34,23 @@ def handler(event, context):
                     raise Exception("there was an error creating your account")
 
             case "PATCH /sign-up":
+                params = {
+                    "ClientId": os.environ.get('USER_POOL_ID'),
+                    "Username": body["username"],
+                    "ConfirmationCode": body["verification"]
+                }
+                cognito_response = cognito.confirm_sign_up(**params)
+                print(cognito_response)
+
                 response['statusCode'] = 200
-                response["body"] = json.dumps({"message": "hello bitch"})
+                response["body"] = json.dumps({"message": "testing 123"})
 
             case _:
                 raise Exception("no matching resource")
 
     except Exception as error:
-        error_message = "an error occurred U+1F602"
+        print(error)
+        error_message = "an error occurred."
 
         match error.__class__.__name__:
             case "UsernameExistsException":
