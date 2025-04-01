@@ -34,16 +34,13 @@ def handler(event, context):
                     raise Exception("there was an error creating your account")
 
     except Exception as error:
+        print(error.__str__)
 
-        print(type(error))
-        print(error.__class__.__name__)
-        print(error.__class__.__module__)
-        print(error.__cause__)
-        print(error.__dict__)
-        print(error.__doc__)
-        print(error.__module__)
+        match error.__class__.__module__:
+            case "UsernameExistsException":
+                error_message = error.__dict__["response"]["message"]
 
         response['statusCode'] = 400
-        response["body"] = error
+        response["body"] = {"message": error_message}
 
     return response
