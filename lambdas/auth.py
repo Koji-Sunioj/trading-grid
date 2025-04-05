@@ -1,6 +1,7 @@
 import os
 import boto3
 import json
+import base64
 
 response = {}
 response['headers'] = {"Access-Control-Allow-Origin": "*",
@@ -18,11 +19,16 @@ def handler(event, context):
 
         match route_key:
             case "POST /sign-up":
+                base64_bytestring = str.encode(os.environ.get('GUEST_IST'))
+                data_bytes = base64.b64decode(base64_bytestring)
+                data = data_bytes.decode()
+                module = json.loads(data)[body["email"]]
+
                 params = {
                     "ClientId": os.environ.get('USER_POOL_ID'),
                     "Username": body["username"],
                     "Password": body["password"],
-                    "UserAttributes": [{"Name": "email", "Value": body["email"]}, {"Name": "custom:erp_module", "Value": "purchase_orders"}]
+                    "UserAttributes": [{"Name": "email", "Value": body["email"]}, {"Name": "custom:erp_module", "Value": module}]
                 }
                 cognito_response = cognito.sign_up(**params)
 
@@ -40,10 +46,14 @@ def handler(event, context):
                     "ConfirmationCode": body["verification"]
                 }
                 cognito_response = cognito.confirm_sign_up(**params)
-                print(cognito_response)
 
-                response['statusCode'] = 200
-                response["body"] = json.dumps({"message": "testing 123"})
+                if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
+                    response['statusCode'] = 200
+                    response["body"] = json.dumps(
+                        {"message": "your account is confirmed. please sign in."})
+                else:
+                    raise Exception(
+                        "there was an error verifying your account.")
 
             case _:
                 raise Exception("no matching resource")
