@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 
 export const ConfirmSignUp = () => {
   const navigate = useNavigate();
 
   const confirmSignUp = async (event) => {
-    //document.getElementById("form-fieldset").disabled = true;
+    document.getElementById("form-fieldset").disabled = true;
     event.preventDefault();
     const {
       target: {
@@ -28,10 +27,10 @@ export const ConfirmSignUp = () => {
     const { status } = response;
     const { message } = await response.json();
     alert(message);
-    //if (status === 200) {
-    //  navigate("/");
-    //}
-    //document.getElementById("form-fieldset").disabled = false;
+    if (status === 200) {
+      navigate("/");
+    }
+    document.getElementById("form-fieldset").disabled = false;
   };
 
   return (

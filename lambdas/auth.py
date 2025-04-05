@@ -18,8 +18,29 @@ def handler(event, context):
             raise Exception("there was no body in request")
 
         match route_key:
+            case "POST /sign-in":
+                params = {
+                    "AuthFlow": "USER_PASSWORD_AUTH",
+                    "ClientId": os.environ.get('USER_POOL_ID'),
+                    "AuthParameters": {
+                        "USERNAME": body["username"],
+                        "PASSWORD": body["password"]
+                    }
+                }
+                cognito_response = cognito.initiate_auth(**params)
+
+                if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
+                    token = cognito_response["AuthenticationResult"]["AccessToken"]
+                    token_string = "token=%s; Path=/; SameSite=Lax;" % token
+                    response['statusCode'] = 200
+                    response["body"] = json.dumps({"message": "welcome"})
+                    response["headers"]["Set-Cookie"] = token_string
+
+                else:
+                    raise Exception("there was an error signing in.")
+
             case "POST /sign-up":
-                base64_bytestring = str.encode(os.environ.get('GUEST_IST'))
+                base64_bytestring = str.encode(os.environ.get('GUEST_LIST'))
                 data_bytes = base64.b64decode(base64_bytestring)
                 data = data_bytes.decode()
                 module = json.loads(data)[body["email"]]

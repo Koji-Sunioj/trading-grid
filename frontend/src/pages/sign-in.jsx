@@ -1,7 +1,35 @@
 import { Link } from "react-router";
 
 export const SignIn = () => {
-  const signIn = () => {};
+  const signIn = async (event) => {
+    document.getElementById("form-fieldset").disabled = true;
+    event.preventDefault();
+    const {
+      target: {
+        username: { value: username },
+        password: { value: password },
+      },
+    } = event;
+
+    const response = await fetch(
+      "https://4qflcoqbxl.execute-api.eu-north-1.amazonaws.com/prod/sign-in",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          username: username,
+          password: password,
+        }),
+      }
+    );
+
+    const { status } = response;
+    const { message } = await response.json();
+    alert(message);
+    //if (status === 200) {
+    //  navigate("/");
+    //}
+    document.getElementById("form-fieldset").disabled = false;
+  };
 
   return (
     <div>
