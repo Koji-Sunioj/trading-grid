@@ -4,12 +4,13 @@ import json
 import base64
 
 response = {}
-response['headers'] = {"Access-Control-Allow-Origin": "*",
-                       "Access-Control-Allow-Methods": "*"}
+response['headers'] = {"Access-Control-Allow-Origin": "http://localhost:5173",
+                       "Access-Control-Allow-Methods": "*", " Access-Control-Allow-Credentials": "true"}
 
 
 def handler(event, context):
     try:
+        print(event)
         if event["body"] != None:
             body = json.loads(event["body"])
             cognito = boto3.client("cognito-idp")
@@ -31,10 +32,11 @@ def handler(event, context):
 
                 if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                     token = cognito_response["AuthenticationResult"]["AccessToken"]
-                    token_string = "token=%s; Path=/; SameSite=Lax;" % token
+                    # token_string = "token=%s; SameSite=Lax; HttpOnly; Path=/" % token
+                    # response["headers"]["Set-Cookie"] = token_string
                     response['statusCode'] = 200
-                    response["body"] = json.dumps({"message": "welcome"})
-                    response["headers"]["Set-Cookie"] = token_string
+                    response["body"] = json.dumps(
+                        {"message": "welcome", "token": token})
 
                 else:
                     raise Exception("there was an error signing in.")

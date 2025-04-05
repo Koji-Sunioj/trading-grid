@@ -23,12 +23,31 @@ export const SignIn = () => {
     );
 
     const { status } = response;
-    const { message } = await response.json();
+    const { message, token } = await response.json();
     alert(message);
-    //if (status === 200) {
-    //  navigate("/");
-    //}
+    if (status === 200) {
+      //document.cookie =
+      //  "token=" +
+      //  token +
+      //  " ;Domain=4qflcoqbxl.execute-api.eu-north-1.amazonaws.com";
+      //  navigate("/");
+      localStorage.setItem("token", token);
+      //document.cookie = "cookieName=cookieValue; path=/; domain=localhost";
+    }
     document.getElementById("form-fieldset").disabled = false;
+  };
+
+  const test = async () => {
+    const response = await fetch(
+      "https://4qflcoqbxl.execute-api.eu-north-1.amazonaws.com/prod/sign-in",
+      {
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          username: "asd",
+        }),
+      }
+    );
   };
 
   return (
@@ -75,6 +94,11 @@ export const SignIn = () => {
           <Link to={{ pathname: "/sign-up" }}>
             Don't have an account? Sign up
           </Link>
+          <p class="control">
+            <button class="button is-success" onClick={test}>
+              test cookie
+            </button>
+          </p>
         </div>
       </div>
     </div>
