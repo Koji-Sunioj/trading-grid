@@ -15,6 +15,7 @@ export const SignIn = () => {
       "https://74s7sl8n76.execute-api.eu-north-1.amazonaws.com/prod/sign-in",
       {
         method: "POST",
+        credentials: "include",
         body: JSON.stringify({
           username: username,
           password: password,
@@ -39,7 +40,7 @@ export const SignIn = () => {
 
   const test = async () => {
     const response = await fetch(
-      "https://4qflcoqbxl.execute-api.eu-north-1.amazonaws.com/prod/sign-in",
+      "https://74s7sl8n76.execute-api.eu-north-1.amazonaws.com/prod/sign-in",
       {
         method: "POST",
         credentials: "include",
