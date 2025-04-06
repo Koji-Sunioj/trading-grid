@@ -12,7 +12,7 @@ export const SignIn = () => {
     } = event;
 
     const response = await fetch(
-      "https://4qflcoqbxl.execute-api.eu-north-1.amazonaws.com/prod/sign-in",
+      "https://74s7sl8n76.execute-api.eu-north-1.amazonaws.com/prod/sign-in",
       {
         method: "POST",
         body: JSON.stringify({
@@ -23,7 +23,7 @@ export const SignIn = () => {
     );
 
     const { status } = response;
-    const { message, token } = await response.json();
+    const { message } = await response.json();
     alert(message);
     if (status === 200) {
       //document.cookie =
@@ -31,7 +31,7 @@ export const SignIn = () => {
       //  token +
       //  " ;Domain=4qflcoqbxl.execute-api.eu-north-1.amazonaws.com";
       //  navigate("/");
-      localStorage.setItem("token", token);
+      //localStorage.setItem("token", token);
       //document.cookie = "cookieName=cookieValue; path=/; domain=localhost";
     }
     document.getElementById("form-fieldset").disabled = false;

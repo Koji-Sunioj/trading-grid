@@ -14,7 +14,7 @@ export const ConfirmSignUp = () => {
     } = event;
 
     const response = await fetch(
-      "https://4qflcoqbxl.execute-api.eu-north-1.amazonaws.com/prod/sign-up",
+      "https://74s7sl8n76.execute-api.eu-north-1.amazonaws.com/prod/sign-up",
       {
         method: "PATCH",
         body: JSON.stringify({

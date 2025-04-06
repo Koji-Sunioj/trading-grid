@@ -4,8 +4,8 @@ import json
 import base64
 
 response = {}
-response['headers'] = {"Access-Control-Allow-Origin": "http://localhost:5173",
-                       "Access-Control-Allow-Methods": "*", " Access-Control-Allow-Credentials": "true"}
+response['headers'] = {"Access-Control-Allow-Origin": "*",
+                       "Access-Control-Allow-Methods": "*"}
 
 
 def handler(event, context):
@@ -32,11 +32,10 @@ def handler(event, context):
 
                 if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                     token = cognito_response["AuthenticationResult"]["AccessToken"]
-                    # token_string = "token=%s; SameSite=Lax; HttpOnly; Path=/" % token
-                    # response["headers"]["Set-Cookie"] = token_string
+                    token_string = "token=%s; SameSite=None; Secure; Path=/" % token
+                    response["headers"]["Set-Cookie"] = token_string
                     response['statusCode'] = 200
-                    response["body"] = json.dumps(
-                        {"message": "welcome", "token": token})
+                    response["body"] = json.dumps({"message": "welcome"})
 
                 else:
                     raise Exception("there was an error signing in.")
