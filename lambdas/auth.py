@@ -64,7 +64,6 @@ def handler(event, context):
                     response["statusCode"] = 200
                     response["body"] = json.dumps(
                         {"message": "welcome", "module": user_module})
-
                 else:
                     raise Exception("there was an error signing in.")
 
@@ -104,7 +103,6 @@ def handler(event, context):
                 else:
                     raise Exception(
                         "there was an error verifying your account.")
-
             case _:
                 raise Exception("no matching resource")
 

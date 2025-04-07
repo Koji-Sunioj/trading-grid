@@ -31,13 +31,6 @@ export const SignIn = () => {
     document.getElementById("form-fieldset").disabled = false;
   };
 
-  const test = async () => {
-    await fetch(import.meta.env.VITE_API + "/auth/purchase-orders", {
-      method: "HEAD",
-      credentials: "include",
-    });
-  };
-
   return (
     <div>
       <div class="has-text-centered mb-4">
@@ -82,11 +75,6 @@ export const SignIn = () => {
           <Link to={{ pathname: "/sign-up" }}>
             Don't have an account? Sign up
           </Link>
-          <p class="control">
-            <button class="button is-success" onClick={test}>
-              test cookie
-            </button>
-          </p>
         </div>
       </div>
     </div>
