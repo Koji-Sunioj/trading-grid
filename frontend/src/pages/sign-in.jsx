@@ -23,21 +23,18 @@ export const SignIn = () => {
     });
 
     const { status } = response;
-    const { message } = await response.json();
+    const { message, module } = await response.json();
     alert(message);
     if (status === 200) {
-      navigate("/erp/asdasd");
+      navigate(`/erp/${module}`);
     }
     document.getElementById("form-fieldset").disabled = false;
   };
 
   const test = async () => {
-    await fetch(import.meta.env.VITE_API + "/sign-in", {
-      method: "POST",
+    await fetch(import.meta.env.VITE_API + "/auth/purchase-orders", {
+      method: "HEAD",
       credentials: "include",
-      body: JSON.stringify({
-        username: "asd",
-      }),
     });
   };
 
