@@ -9,7 +9,6 @@ response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
 def handler(event, context):
     try:
-        print(event["headers"])
         if event["body"] != None:
             response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
             body = json.loads(event["body"])
@@ -19,6 +18,11 @@ def handler(event, context):
             raise Exception("there was no body in request")
 
         match route_key:
+            case "POST /auth":
+                print(event["headers"]["cookie"])
+                response['statusCode'] = 200
+                response["body"] = json.dumps({"message": "welcome"})
+
             case "POST /sign-in":
                 params = {
                     "AuthFlow": "USER_PASSWORD_AUTH",

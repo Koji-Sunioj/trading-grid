@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 
 export const SignUp = () => {
@@ -15,17 +14,14 @@ export const SignUp = () => {
       },
     } = event;
 
-    const response = await fetch(
-      "https://74s7sl8n76.execute-api.eu-north-1.amazonaws.com/prod/sign-up",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          username: username,
-          password: password,
-          email: email,
-        }),
-      }
-    );
+    const response = await fetch(import.meta.env.VITE_API + "/sign-up", {
+      method: "POST",
+      body: JSON.stringify({
+        username: username,
+        password: password,
+        email: email,
+      }),
+    });
     const { status } = response;
     const { message } = await response.json();
     alert(message);

@@ -1,6 +1,8 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 export const SignIn = () => {
+  const navigate = useNavigate();
+
   const signIn = async (event) => {
     document.getElementById("form-fieldset").disabled = true;
     event.preventDefault();
@@ -11,44 +13,32 @@ export const SignIn = () => {
       },
     } = event;
 
-    const response = await fetch(
-      "https://74s7sl8n76.execute-api.eu-north-1.amazonaws.com/prod/sign-in",
-      {
-        method: "POST",
-        credentials: "include",
-        body: JSON.stringify({
-          username: username,
-          password: password,
-        }),
-      }
-    );
+    const response = await fetch(import.meta.env.VITE_API + "/sign-in", {
+      method: "POST",
+      credentials: "include",
+      body: JSON.stringify({
+        username: username,
+        password: password,
+      }),
+    });
 
     const { status } = response;
     const { message } = await response.json();
     alert(message);
     if (status === 200) {
-      //document.cookie =
-      //  "token=" +
-      //  token +
-      //  " ;Domain=4qflcoqbxl.execute-api.eu-north-1.amazonaws.com";
-      //  navigate("/");
-      //localStorage.setItem("token", token);
-      //document.cookie = "cookieName=cookieValue; path=/; domain=localhost";
+      navigate("/erp/asdasd");
     }
     document.getElementById("form-fieldset").disabled = false;
   };
 
   const test = async () => {
-    const response = await fetch(
-      "https://74s7sl8n76.execute-api.eu-north-1.amazonaws.com/prod/sign-in",
-      {
-        method: "POST",
-        credentials: "include",
-        body: JSON.stringify({
-          username: "asd",
-        }),
-      }
-    );
+    await fetch(import.meta.env.VITE_API + "/sign-in", {
+      method: "POST",
+      credentials: "include",
+      body: JSON.stringify({
+        username: "asd",
+      }),
+    });
   };
 
   return (
@@ -87,7 +77,7 @@ export const SignIn = () => {
               </div>
               <div class="field">
                 <p class="control">
-                  <button class="button is-success">Sign up</button>
+                  <button class="button is-success">Sign in</button>
                 </p>
               </div>
             </fieldset>

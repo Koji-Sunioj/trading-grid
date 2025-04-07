@@ -13,16 +13,13 @@ export const ConfirmSignUp = () => {
       },
     } = event;
 
-    const response = await fetch(
-      "https://74s7sl8n76.execute-api.eu-north-1.amazonaws.com/prod/sign-up",
-      {
-        method: "PATCH",
-        body: JSON.stringify({
-          username: username,
-          verification: verification,
-        }),
-      }
-    );
+    const response = await fetch(import.meta.env.VITE_API + "/sign-up", {
+      method: "PATCH",
+      body: JSON.stringify({
+        username: username,
+        verification: verification,
+      }),
+    });
 
     const { status } = response;
     const { message } = await response.json();
@@ -34,7 +31,7 @@ export const ConfirmSignUp = () => {
   };
 
   return (
-    <div>
+    <div className="container">
       <div class="has-text-centered mb-4">
         <h1 class="title">Welcome to the Trading Grid</h1>
         <h2 class="subtitle">
