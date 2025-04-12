@@ -17,12 +17,12 @@ def get_module(cognito, access_token):
 def handler(event, context):
     try:
         response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
+        response["headers"]["Access-Control-Allow-Credentials"] = "true"
         cognito = boto3.client("cognito-idp")
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
 
         match route_key:
             case "GET /auth/{module}":
-                response["headers"]["Access-Control-Allow-Credentials"] = "true"
                 module = event["pathParameters"]["module"]
 
                 if "cookie" not in event["headers"]:
@@ -42,7 +42,7 @@ def handler(event, context):
                     body = json.loads(event["body"])
                 else:
                     raise Exception("there was no body in request")
-                response["headers"]["Access-Control-Allow-Credentials"] = "true"
+
                 params = {
                     "AuthFlow": "USER_PASSWORD_AUTH",
                     "ClientId": os.environ.get('USER_POOL_ID'),
