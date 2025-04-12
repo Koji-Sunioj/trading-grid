@@ -48,7 +48,6 @@ export const SignIn = () => {
                     type="text"
                     name="username"
                     placeholder="username"
-                    pattern="[A-Za-z_]{8,}"
                     required
                   ></input>
                 </p>
@@ -60,7 +59,6 @@ export const SignIn = () => {
                     type="password"
                     placeholder="password"
                     name="password"
-                    pattern="[A-Za-z0-9]{8,}"
                     required
                   ></input>
                 </p>

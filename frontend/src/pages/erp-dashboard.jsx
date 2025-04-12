@@ -26,24 +26,18 @@ export const ERP = () => {
       })();
   });
 
-  console.log(authorized);
   return (
     <div>
-      {authorized.state ? (
-        <div>
-          <div class="has-text-centered mb-4">
-            <h1 class="title">This is your dashboard</h1>
-            <h2 class="subtitle">Sign up with username, email and password</h2>
-          </div>
-          <div></div>
+      {authorized.state && (
+        <div class="has-text-centered mb-4">
+          <h1 class="title">This is your dashboard</h1>
+          <h2 class="subtitle">module: {userModule}</h2>
         </div>
-      ) : (
-        <div>
-          <div class="has-text-centered mb-4">
-            <h1 class="title">403 Forbidden</h1>
-            <h2 class="subtitle">{authorized.message}</h2>
-          </div>
-          <div></div>
+      )}
+      {authorized.state === false && (
+        <div class="has-text-centered mb-4">
+          <h1 class="title">403 Forbidden</h1>
+          <h2 class="subtitle">{authorized.message}</h2>
         </div>
       )}
     </div>
