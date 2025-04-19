@@ -67,15 +67,13 @@ def handler(event, context):
                 raise Exception("no matching resource")
 
     except Exception as error:
-
-        print(error.__class__.__name__, error)
+        print("error name %s" + error.__class__.__name__)
+        print(error)
         error_message = "an error occurred."
 
         match error.__class__.__name__:
             case "NotAuthorizedException":
                 error_message = "invalid username or password"
-            case "UsernameExistsException":
-                error_message = error.__dict__["response"]["message"]
             case "Exception":
                 error_message = error.__str__()
 
