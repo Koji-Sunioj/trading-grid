@@ -34,30 +34,18 @@ def handler(event, context):
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
 
         match route_key:
-            case "POST /purchase-orders":
+            case "PUT /purchase-orders":
 
                 check_M2M_token(event["headers"]["Authorization"])
-
                 body = None
-                existing_ammendments = None
 
                 if event["body"] != None:
                     body = json.loads(event["body"], parse_float=Decimal)
-                    body["amendments"] = []
 
                 dynamodb = boto3.resource('dynamodb')
-                table = dynamodb.Table(os.environ.get("TABLE_NAME"))
+                table = dynamodb.Table(os.environ.get("PO_TABLE"))
 
-                ddb_response = table.get_item(
-                    Key={'purchase_order_id': int(body["purchase_order_id"])})
-
-                if "Item" in ddb_response:
-                    body["amendments"] = ddb_response["Item"]["amendments"]
-
-                ddb_response = table.put_item(
-                    TableName=os.environ.get("TABLE_NAME"),
-                    Item=body,
-                )
+                ddb_response = table.put_item(Item=body)
 
                 if ddb_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
                     raise Exception(
