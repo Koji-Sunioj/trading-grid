@@ -6,14 +6,6 @@ response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
 
-def get_module(cognito, access_token):
-
-    cognito_response = cognito.get_user(AccessToken=access_token)
-    module = [attribute for attribute in cognito_response["UserAttributes"]
-              if attribute["Name"] == "custom:erp_module"][0]["Value"]
-    return module
-
-
 def handler(event, context):
     try:
         response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
@@ -22,22 +14,16 @@ def handler(event, context):
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
 
         match route_key:
-            case "GET /auth/{module}":
-                module = event["pathParameters"]["module"]
+            case "GET /auth/merchant":
 
                 if "cookie" not in event["headers"]:
                     raise Exception("please log in again")
 
                 token = event["headers"]["cookie"].split("=")[1]
-                user_module = get_module(cognito, token)
-
-                if user_module != module:
-                    raise Exception("unauthorized access")
 
                 response["statusCode"] = 200
-                response["body"] = json.dumps({"module": user_module})
 
-            case "POST /sign-in":
+            case "POST /auth/sign-in":
                 if event["body"] != None:
                     body = json.loads(event["body"])
                 else:
@@ -56,11 +42,9 @@ def handler(event, context):
                 if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                     token = cognito_response["AuthenticationResult"]["AccessToken"]
                     token_string = "token=%s; SameSite=None; Secure; Path=/" % token
-                    user_module = get_module(cognito, token)
                     response["headers"]["Set-Cookie"] = token_string
                     response["statusCode"] = 200
-                    response["body"] = json.dumps(
-                        {"message": "welcome", "module": user_module})
+                    response["body"] = json.dumps({"message": "welcome"})
                 else:
                     raise Exception("there was an error signing in.")
             case _:
