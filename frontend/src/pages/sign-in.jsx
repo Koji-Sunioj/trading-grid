@@ -13,7 +13,7 @@ export const SignIn = () => {
       },
     } = event;
 
-    const response = await fetch(import.meta.env.VITE_API + "/sign-in", {
+    const response = await fetch(import.meta.env.VITE_API + "/auth/sign-in", {
       method: "POST",
       credentials: "include",
       body: JSON.stringify({
@@ -23,10 +23,10 @@ export const SignIn = () => {
     });
 
     const { status } = response;
-    const { message, module } = await response.json();
+    const { message } = await response.json();
     alert(message);
     if (status === 200) {
-      navigate(`/erp/${module}`);
+      navigate(`/erps`);
     }
     document.getElementById("form-fieldset").disabled = false;
   };

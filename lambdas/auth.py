@@ -20,7 +20,7 @@ def handler(event, context):
                     raise Exception("please log in again")
 
                 token = event["headers"]["cookie"].split("=")[1]
-
+                cognito_response = cognito.get_user(AccessToken=token)
                 response["statusCode"] = 200
 
             case "POST /auth/sign-in":

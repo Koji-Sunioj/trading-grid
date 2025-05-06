@@ -9,7 +9,7 @@ export const ERP = () => {
     authorized.state === null &&
       (async () => {
         const response = await fetch(
-          import.meta.env.VITE_API + `/auth/${userModule}`,
+          import.meta.env.VITE_API + `/auth/merchant`,
           {
             method: "GET",
             credentials: "include",
