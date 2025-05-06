@@ -26,7 +26,7 @@ export const SignIn = () => {
     const { message } = await response.json();
     alert(message);
     if (status === 200) {
-      navigate(`/erps`);
+      navigate(`/erp`);
     }
     document.getElementById("form-fieldset").disabled = false;
   };

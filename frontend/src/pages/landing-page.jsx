@@ -1,15 +1,25 @@
-import { Link, useNavigate } from "react-router";
+import { useContext } from "react";
+import { Link } from "react-router";
+import { UserContext } from "../main";
 
 export const LandingPage = () => {
+  const { user } = useContext(UserContext);
+
   return (
     <div>
       <div class="has-text-centered mb-4">
-        <h1 class="title">Welcome to the Trading Grid</h1>
-        <h2 class="subtitle">Sign in to access your ERP modules.</h2>
+        <h1 class="title">Welcome {user}</h1>
+        <h2 class="subtitle">Click on a module below to get started.</h2>
       </div>
-      <div>
-        <Link to={{ pathname: "/erp/orders" }}>Purchase Orders</Link>
-        <Link to={{ pathname: "/erp/shipments" }}>Purchase Orders</Link>
+      <div class="sign-in">
+        <ul>
+          <li>
+            <Link to={{ pathname: "/erp/orders" }}>Purchase Orders</Link>
+          </li>
+          <li>
+            <Link to={{ pathname: "/erp/shipments" }}>Shipment Orders</Link>
+          </li>
+        </ul>
       </div>
     </div>
   );
