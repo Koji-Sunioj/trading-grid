@@ -19,7 +19,6 @@ def handler(event, context):
 
         match route_key:
             case "POST /auth/client":
-
                 allowed_creds = json.loads(base64.b64decode(
                     os.environ.get("CLIENT_CREDS")).decode("utf-8"))
                 creds = base64.b64decode(event["headers"]["Authorization"].split(" ")[
@@ -39,7 +38,6 @@ def handler(event, context):
                     raise Exception("invalid credentials")
 
             case "GET /auth/merchant":
-
                 if "cookie" not in event["headers"]:
                     raise Exception("please log in again")
 
@@ -77,7 +75,7 @@ def handler(event, context):
                 raise Exception("no matching resource")
 
     except Exception as error:
-        print("error name %s" + error.__class__.__name__)
+        print("error name %s" % error.__class__.__name__)
         print(error)
         error_message = "an error occurred."
 

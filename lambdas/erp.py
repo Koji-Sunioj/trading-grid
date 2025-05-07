@@ -10,20 +10,8 @@ response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
 
-def check_M2M_token(authoriziation_value):
-    token = authoriziation_value
-    signing_url = os.environ.get("SIGNING_URL")
-    kids = requests.get(signing_url + "/.well-known/jwks.json").json()["keys"]
-    token_header = jwt.get_unverified_header(token)
-    rsa_key = [header for header in kids if header["kid"]
-               == token_header["kid"]][0]
-    jwt.decode(
-        token,
-        rsa_key,
-        algorithms=["RS256"],
-        issuer=signing_url,
-        subject=os.environ.get("M2M_POOL_ID")
-    )
+def check_token(token):
+    jwt.decode(token, key=os.environ.get("TOKEN_KEY"), audience="/auth/client")
 
 
 def handler(event, context):
@@ -35,8 +23,8 @@ def handler(event, context):
 
         match route_key:
             case "PUT /purchase-orders":
-
-                check_M2M_token(event["headers"]["Authorization"])
+                response["body"] = json.dumps({"message": "hell"})
+                check_token(event["headers"]["Authorization"])
                 body = None
 
                 if event["body"] != None:
@@ -58,7 +46,7 @@ def handler(event, context):
                 raise Exception("no matching resource")
 
     except Exception as error:
-        print("error name %s" + error.__class__.__name__)
+        print("error name %s" % error.__class__.__name__)
         print(error.__str__())
         error_message = error.__str__()
 
