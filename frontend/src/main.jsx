@@ -39,7 +39,7 @@ const App = () => {
   });
 
   return (
-    <UserContext.Provider value={authorized}>
+    <UserContext.Provider value={{ authorized, setAuthorized }}>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<SignIn />} />

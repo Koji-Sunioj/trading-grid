@@ -1,6 +1,14 @@
 import { Link, useNavigate } from "react-router";
 
+import { useContext } from "react";
+
+import { UserContext } from "../main";
+
 export const SignIn = () => {
+  const { authorized, setAuthorized } = useContext(UserContext);
+
+  console.log(authorized);
+
   const navigate = useNavigate();
 
   const signIn = async (event) => {
@@ -23,9 +31,10 @@ export const SignIn = () => {
     });
 
     const { status } = response;
-    const { message } = await response.json();
+    const { message, user } = await response.json();
     alert(message);
     if (status === 200) {
+      setAuthorized({ message: "authorized", state: true, user: user });
       navigate(`/erp`);
     }
     document.getElementById("form-fieldset").disabled = false;
