@@ -17,11 +17,11 @@ export const ERP = () => {
     if (invalidParams) {
       setQueryParams({ sort: "modified", order: "asc" });
     } else {
-      fetchOrders(sortBy, orderBy);
+      fetchOrders();
     }
   }, [queryParams]);
 
-  const fetchOrders = async (sortBy, orderBy) => {
+  const fetchOrders = async () => {
     setUIState({ loading: true });
     const response = await fetch(
       import.meta.env.VITE_API +
