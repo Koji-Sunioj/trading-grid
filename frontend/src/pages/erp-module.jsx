@@ -1,26 +1,25 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 
 export const ERP = () => {
   const { module } = useParams();
   const [queryParams, setQueryParams] = useSearchParams();
   const [purchaseOrders, setPurchaseOrders] = useState(null);
   const [UIState, setUIState] = useState({ loading: false });
-
   const sortBy = queryParams.get("sort");
   const orderBy = queryParams.get("order");
   const headers = ["modified", "purchase_order_id", "status", "line_count"];
 
-  const emptyParams =
+  const invalidParams =
     !headers.includes(sortBy) || !["asc", "desc"].includes(orderBy);
-  const shouldFetch =
-    purchaseOrders === null && !UIState.loading && !emptyParams;
 
   useEffect(() => {
-    emptyParams && setQueryParams({ sort: "modified", order: "asc" });
-
-    shouldFetch && fetchOrders(sortBy, orderBy);
-  });
+    if (invalidParams) {
+      setQueryParams({ sort: "modified", order: "asc" });
+    } else {
+      fetchOrders(sortBy, orderBy);
+    }
+  }, [queryParams]);
 
   const fetchOrders = async (sortBy, orderBy) => {
     setUIState({ loading: true });
@@ -46,7 +45,6 @@ export const ERP = () => {
   const changeQuery = (header) => {
     const newSortBy = orderBy === "asc" ? "desc" : "asc";
     setQueryParams({ sort: header, order: newSortBy });
-    fetchOrders(header, newSortBy);
   };
 
   return (
