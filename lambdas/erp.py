@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 import requests
+import traceback
 from jose import jwt
 from decimal import Decimal
 
@@ -35,6 +36,15 @@ def handler(event, context):
                 dynamodb = boto3.resource('dynamodb')
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 ddb_response = table.scan()
+
+                sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "modified"
+                order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
+                desc = order_by == "desc"
+
+                if sort_by == "line_count":
+                    ddb_response["Items"].sort(key=lambda x : len(x["data"]),reverse=desc)
+                else:
+                    ddb_response["Items"].sort(key=lambda x : x[sort_by],reverse=desc)
 
                 response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
                 response["headers"]["Access-Control-Allow-Credentials"] = "true"
@@ -70,7 +80,7 @@ def handler(event, context):
 
     except Exception as error:
         print("error name %s" % error.__class__.__name__)
-        print(error.__str__())
+        print(traceback.format_exc())
         error_message = error.__str__()
 
         response['statusCode'] = 400

@@ -1,49 +1,85 @@
-import { useParams } from "react-router";
 import { useEffect, useState } from "react";
+import { useParams, useSearchParams, useNavigate } from "react-router";
 
 export const ERP = () => {
   const { module } = useParams();
-
+  const [queryParams, setQueryParams] = useSearchParams();
   const [purchaseOrders, setPurchaseOrders] = useState(null);
+  const [UIState, setUIState] = useState({ loading: false });
+
+  const sortBy = queryParams.get("sort");
+  const orderBy = queryParams.get("order");
+  const headers = ["modified", "purchase_order_id", "status", "line_count"];
+
+  const emptyParams =
+    !headers.includes(sortBy) || !["asc", "desc"].includes(orderBy);
+  const shouldFetch =
+    purchaseOrders === null && !UIState.loading && !emptyParams;
 
   useEffect(() => {
-    module === "orders" &&
-      purchaseOrders === null &&
-      (async () => {
-        const response = await fetch(
-          import.meta.env.VITE_API + `/purchase-orders/merchant`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-        const { status } = response;
+    emptyParams && setQueryParams({ sort: "modified", order: "asc" });
 
-        if (status !== 200) {
-          setPurchaseOrders([]);
-        } else {
-          const { orders } = await response.json();
-          console.log(orders);
-          setPurchaseOrders(orders);
-        }
-      })();
+    shouldFetch && fetchOrders(sortBy, orderBy);
   });
+
+  const fetchOrders = async (sortBy, orderBy) => {
+    setUIState({ loading: true });
+    const response = await fetch(
+      import.meta.env.VITE_API +
+        `/${module}/merchant?sort=${sortBy}&order=${orderBy}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
+    const { status } = response;
+
+    if (status !== 200) {
+      setPurchaseOrders([]);
+    } else {
+      const { orders } = await response.json();
+      setPurchaseOrders(orders);
+    }
+    setUIState({ loading: false });
+  };
+
+  const changeQuery = (header) => {
+    const newSortBy = orderBy === "asc" ? "desc" : "asc";
+    setQueryParams({ sort: header, order: newSortBy });
+    fetchOrders(header, newSortBy);
+  };
 
   return (
     <div>
       <div class="has-text-centered mb-4">
         <h1 class="title">module: {module}</h1>
-        <h2 class="subtitle">Click on a module below to get started.</h2>
+        <h2
+          class="subtitle"
+          style={{ visibility: UIState.loading ? "visible" : "hidden" }}
+        >
+          Fetching from server...
+        </h2>
       </div>
       <div className="po-table">
         {purchaseOrders !== null && purchaseOrders.length > 0 && (
           <table class="table">
             <thead>
               <tr>
-                <th>last modified</th>
-                <th>order id</th>
-                <th>status</th>
-                <th>line count</th>
+                {headers.map((header) => (
+                  <th key={header}>
+                    <button
+                      onClick={() => {
+                        changeQuery(header);
+                      }}
+                    >
+                      <b>
+                        {header.replace(/_/g, " ")}{" "}
+                        {header === sortBy &&
+                          { desc: "\u2B07", asc: "\u2B06" }[orderBy]}
+                      </b>
+                    </button>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>

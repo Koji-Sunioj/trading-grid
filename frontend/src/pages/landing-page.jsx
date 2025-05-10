@@ -14,7 +14,14 @@ export const LandingPage = () => {
       <div class="sign-in">
         <ul>
           <li>
-            <Link to={{ pathname: "/erp/orders" }}>Purchase Orders</Link>
+            <Link
+              to={{
+                pathname: "/erp/purchase-orders",
+                search: "?sort=modified&order=asc",
+              }}
+            >
+              Purchase Orders
+            </Link>
           </li>
           <li>
             <Link to={{ pathname: "/erp/shipments" }}>Shipment Orders</Link>
