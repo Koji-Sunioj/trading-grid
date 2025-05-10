@@ -42,16 +42,18 @@ export const ERP = () => {
               <tr>
                 <th>last modified</th>
                 <th>order id</th>
+                <th>status</th>
                 <th>line count</th>
               </tr>
             </thead>
             <tbody>
               {purchaseOrders.map((order) => {
-                const { modified, data, purchase_order_id } = order;
+                const { modified, data, purchase_order_id, status } = order;
                 return (
                   <tr key={purchase_order_id}>
                     <td>{modified}</td>
                     <td>{purchase_order_id}</td>
+                    <td>{status}</td>
                     <td>{data.length}</td>
                   </tr>
                 );
