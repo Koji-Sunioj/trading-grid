@@ -25,6 +25,14 @@
         width: 30vw;
         margin: auto;
     }
+    .po-table {
+        width: 50vw;
+        margin: auto;
+    }
+}
+
+.table {
+    width: 100%;
 }
 
 #root {
