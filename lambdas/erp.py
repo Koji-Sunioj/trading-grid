@@ -42,15 +42,28 @@ def handler(event, context):
                 desc = order_by == "desc"
 
                 if sort_by == "line_count":
-                    ddb_response["Items"].sort(key=lambda x : len(x["data"]),reverse=desc)
+                    ddb_response["Items"].sort(
+                        key=lambda x: len(x["data"]), reverse=desc)
                 else:
-                    ddb_response["Items"].sort(key=lambda x : x[sort_by],reverse=desc)
+                    ddb_response["Items"].sort(
+                        key=lambda x: x[sort_by], reverse=desc)
 
                 response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
                 response["headers"]["Access-Control-Allow-Credentials"] = "true"
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
                     {"orders": ddb_response["Items"]}, default=serialize_float)
+
+            case "GET /purchase-orders/merchant/{purchase_order_id}":
+                if "cookie" not in event["headers"]:
+                    raise Exception("please sign in")
+
+                cognito = boto3.client("cognito-idp")
+                token = event["headers"]["cookie"].split("=")[1]
+                cognito.get_user(AccessToken=token)
+
+                response["statusCode"] = 200
+                response["body"] = json.dumps({"hello": "man"})
 
             case "PUT /purchase-orders/client":
                 if "Authorization" not in event["headers"]:
@@ -75,6 +88,7 @@ def handler(event, context):
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
                     {"message": "purchase order %s received" % body["purchase_order_id"]})
+
             case _:
                 raise Exception("no matching resource")
 
