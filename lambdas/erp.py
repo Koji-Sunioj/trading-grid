@@ -15,7 +15,7 @@ def serialize_float(obj):
 
 def check_hmac(payload, client_hmac):
     correct_hmac = hmac.digest(os.environ.get(
-        "TOKEN_KEY").encode(), payload, digest=hashlib.sha256).hex()
+        "TOKEN_KEY").encode(), payload.encode(), digest=hashlib.sha256).hex()
     if not hmac.compare_digest(client_hmac, correct_hmac):
         raise Exception("invalid credentials")
 
@@ -74,15 +74,13 @@ def handler(event, context):
                     raise Exception("no authoriziation")
 
                 if event["body"] != None:
-                    hmac_body = json.loads(
-                        event["body"], parse_float=serialize_float)
-
-                check_hmac(str(hmac_body).encode(),
-                           event["headers"]["Authorization"])
+                    check_hmac(event["body"], event["headers"]
+                               ["Authorization"])
+                else:
+                    raise Exception("no body in request")
 
                 dynamodb = boto3.resource('dynamodb')
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
-
                 ddb_body = json.loads(event["body"], parse_float=Decimal)
                 ddb_response = table.put_item(Item=ddb_body)
 
