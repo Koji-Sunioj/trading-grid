@@ -1,6 +1,8 @@
 import os
+import hmac
 import json
 import boto3
+import hashlib
 import requests
 import traceback
 from jose import jwt
@@ -8,12 +10,14 @@ from decimal import Decimal
 
 
 def serialize_float(obj):
-    if isinstance(obj, Decimal):
-        return float(obj)
+    return float(obj)
 
 
-def check_token(token):
-    jwt.decode(token, key=os.environ.get("TOKEN_KEY"), audience="/auth/client")
+def check_hmac(payload, client_hmac):
+    correct_hmac = hmac.digest(os.environ.get(
+        "TOKEN_KEY").encode(), payload, digest=hashlib.sha256).hex()
+    if not hmac.compare_digest(client_hmac, correct_hmac):
+        raise Exception("invalid credentials")
 
 
 response = {}
@@ -69,17 +73,18 @@ def handler(event, context):
                 if "Authorization" not in event["headers"]:
                     raise Exception("no authoriziation")
 
-                response["body"] = json.dumps({"message": "hell"})
-                check_token(event["headers"]["Authorization"])
-                body = None
-
                 if event["body"] != None:
-                    body = json.loads(event["body"], parse_float=Decimal)
+                    hmac_body = json.loads(
+                        event["body"], parse_float=serialize_float)
+
+                check_hmac(str(hmac_body).encode(),
+                           event["headers"]["Authorization"])
 
                 dynamodb = boto3.resource('dynamodb')
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
 
-                ddb_response = table.put_item(Item=body)
+                ddb_body = json.loads(event["body"], parse_float=Decimal)
+                ddb_response = table.put_item(Item=ddb_body)
 
                 if ddb_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
                     raise Exception(
@@ -87,7 +92,7 @@ def handler(event, context):
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
-                    {"message": "purchase order %s received" % body["purchase_order_id"]})
+                    {"message": "purchase order %s received" % ddb_body["purchase_order_id"]})
 
             case _:
                 raise Exception("no matching resource")
