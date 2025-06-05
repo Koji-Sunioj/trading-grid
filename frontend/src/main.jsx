@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 import { Unathorized } from "./pages/403";
 import { SignIn } from "./pages/sign-in";
 import { ERP } from "./pages/erp-module";
+import { RoutingTable } from "./pages/manage-clients";
 import { React, createContext, useState, useEffect } from "react";
 import { LandingPage } from "./pages/landing-page";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router";
@@ -46,6 +47,7 @@ const App = () => {
           {authorized.state && (
             <>
               <Route path="/erp" element={<LandingPage />} />
+              <Route path="/erp/manage-clients" element={<RoutingTable />} />
               <Route path="/erp/:module" element={<ERP />} />
             </>
           )}

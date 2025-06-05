@@ -28,6 +28,8 @@ def handler(event, context):
     try:
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
 
+        print(route_key)
+
         match route_key:
             case "GET /purchase-orders/merchant":
                 if "cookie" not in event["headers"]:
@@ -66,6 +68,26 @@ def handler(event, context):
                 token = event["headers"]["cookie"].split("=")[1]
                 cognito.get_user(AccessToken=token)
 
+                response["statusCode"] = 200
+                response["body"] = json.dumps({"hello": "man"})
+
+            case "PUT /admin/routing-table":
+                if "cookie" not in event["headers"]:
+                    raise Exception("please sign in")
+
+                if event["body"] == None:
+                    raise Exception("no body in request")
+
+                cognito = boto3.client("cognito-idp")
+                token = event["headers"]["cookie"].split("=")[1]
+                cognito.get_user(AccessToken=token)
+
+                dynamodb = boto3.resource('dynamodb')
+                table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+                table.put_item(Item=json.loads(event["body"]))
+
+                response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
+                response["headers"]["Access-Control-Allow-Credentials"] = "true"
                 response["statusCode"] = 200
                 response["body"] = json.dumps({"hello": "man"})
 

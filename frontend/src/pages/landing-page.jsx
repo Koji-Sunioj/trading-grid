@@ -28,6 +28,21 @@ export const LandingPage = () => {
           </li>
         </ul>
       </div>
+      <section class="section">
+        <div class="has-text-centered mb-4">
+          <h2 class="title">Manage clients</h2>
+          <h2 class="subtitle">Routings, authentication and identifiers.</h2>
+        </div>
+        <div class="sign-in">
+          <ul>
+            <li>
+              <Link to={{ pathname: "/erp/manage-clients" }}>
+                Client Management
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </section>
     </div>
   );
 };
