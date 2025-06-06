@@ -20,31 +20,44 @@ def check_hmac(payload, client_hmac):
         raise Exception("invalid credentials")
 
 
-def something(function):
+def validate(function):
     @wraps(function)
-    def transaction(*args, **kwargs):
-        print(args)
-        print(kwargs)
-        executed = function(*args, **kwargs)
-        return executed
-
-
-response = {}
-response['headers'] = {"Access-Control-Allow-Methods": "*"}
-
-
-@something
-def handler(event, context):
-    try:
+    def lambda_request(*args):
+        event = args[0]
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
+        response = {}
+        response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
-        print(route_key)
+        if route_key in ["GET /purchase-orders/merchant", "GET /purchase-orders/merchant/{purchase_order_id}", "PUT /admin/routing-table"]:
+            response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
+            response["headers"]["Access-Control-Allow-Credentials"] = "true"
 
         match route_key:
-            case "GET /purchase-orders/merchant":
-                if "cookie" not in event["headers"]:
-                    raise Exception("please sign in")
+            case "GET /purchase-orders/merchant" | "GET /purchase-orders/merchant/{purchase_order_id}" | "PUT /admin/routing-table" if "cookie" not in event["headers"]:
+                response["statusCode"] = 401
+                response["body"] = json.dumps({"message": "please sign in"})
+                return response
 
+            case "PUT /purchase-orders/client" if "Authorization" not in event["headers"]:
+                response["statusCode"] = 401
+                response["body"] = json.dumps(
+                    {"message": "invalid credentials"})
+                return response
+
+        if route_key in ["PUT /admin/routing-table", "PUT /purchase-orders/client"] and event["body"] == None:
+            response["statusCode"] = 400
+            response["body"] = json.dumps({"message": "no body in request"})
+            return response
+
+        return function(*args, route_key, response)
+    return lambda_request
+
+
+@validate
+def handler(event, context, route_key, response):
+    try:
+        match route_key:
+            case "GET /purchase-orders/merchant":
                 cognito = boto3.client("cognito-idp")
                 token = event["headers"]["cookie"].split("=")[1]
                 cognito.get_user(AccessToken=token)
@@ -64,30 +77,11 @@ def handler(event, context):
                     ddb_response["Items"].sort(
                         key=lambda x: x[sort_by], reverse=desc)
 
-                response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
-                response["headers"]["Access-Control-Allow-Credentials"] = "true"
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
                     {"orders": ddb_response["Items"]}, default=serialize_float)
 
-            case "GET /purchase-orders/merchant/{purchase_order_id}":
-                if "cookie" not in event["headers"]:
-                    raise Exception("please sign in")
-
-                cognito = boto3.client("cognito-idp")
-                token = event["headers"]["cookie"].split("=")[1]
-                cognito.get_user(AccessToken=token)
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps({"hello": "man"})
-
             case "PUT /admin/routing-table":
-                if "cookie" not in event["headers"]:
-                    raise Exception("please sign in")
-
-                if event["body"] == None:
-                    raise Exception("no body in request")
-
                 cognito = boto3.client("cognito-idp")
                 token = event["headers"]["cookie"].split("=")[1]
                 cognito.get_user(AccessToken=token)
@@ -96,20 +90,11 @@ def handler(event, context):
                 table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
                 table.put_item(Item=json.loads(event["body"]))
 
-                response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
-                response["headers"]["Access-Control-Allow-Credentials"] = "true"
                 response["statusCode"] = 200
                 response["body"] = json.dumps({"hello": "man"})
 
             case "PUT /purchase-orders/client":
-                if "Authorization" not in event["headers"]:
-                    raise Exception("no authoriziation")
-
-                if event["body"] != None:
-                    check_hmac(event["body"], event["headers"]
-                               ["Authorization"])
-                else:
-                    raise Exception("no body in request")
+                check_hmac(event["body"], event["headers"]["Authorization"])
 
                 dynamodb = boto3.resource('dynamodb')
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
@@ -123,6 +108,14 @@ def handler(event, context):
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
                     {"message": "purchase order %s received" % ddb_body["purchase_order_id"]})
+
+            # case "GET /purchase-orders/merchant/{purchase_order_id}":
+            #    cognito = boto3.client("cognito-idp")
+            #    token = event["headers"]["cookie"].split("=")[1]
+            #    cognito.get_user(AccessToken=token)
+            #
+            #    response["statusCode"] = 200
+            #    response["body"] = json.dumps({"hello": "man"})
 
             case _:
                 raise Exception("no matching resource")
