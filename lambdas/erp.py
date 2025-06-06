@@ -5,8 +5,8 @@ import boto3
 import hashlib
 import requests
 import traceback
-from jose import jwt
 from decimal import Decimal
+from functools import wraps
 
 
 def serialize_float(obj):
@@ -20,10 +20,20 @@ def check_hmac(payload, client_hmac):
         raise Exception("invalid credentials")
 
 
+def something(function):
+    @wraps(function)
+    def transaction(*args, **kwargs):
+        print(args)
+        print(kwargs)
+        executed = function(*args, **kwargs)
+        return executed
+
+
 response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
 
+@something
 def handler(event, context):
     try:
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
