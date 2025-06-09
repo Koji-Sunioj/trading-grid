@@ -1,3 +1,4 @@
+import os
 import json
 import traceback
 
@@ -6,6 +7,8 @@ def handler(event, context):
     response = {}
     try:
         print(event)
+        accepted_origins = os.environ.get("ACCEPTED_ORIGINS").split(",")
+
         response["statusCode"] = 200
         response["body"] = json.dumps({"hello": "man"})
 
