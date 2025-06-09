@@ -24,7 +24,7 @@ export const SignIn = () => {
         password: password,
       }),
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "text/plain",
       },
     });
 

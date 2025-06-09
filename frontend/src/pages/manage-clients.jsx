@@ -46,13 +46,16 @@ export const RoutingTable = () => {
     const response = await fetch(
       import.meta.env.VITE_API + "/admin/routing-table",
       {
-        method: "PUT",
+        method: "POST",
         credentials: "include",
         body: JSON.stringify({
           client_id: client_id,
           callback: callback,
           hmac: hmac,
         }),
+        headers: {
+          "Content-Type": "text/plain",
+        },
       }
     );
 
