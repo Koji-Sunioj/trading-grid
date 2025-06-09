@@ -28,12 +28,12 @@ def validate(function):
         response = {}
         response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
-        if route_key in ["GET /purchase-orders/merchant", "GET /purchase-orders/merchant/{purchase_order_id}", "PUT /admin/routing-table", "GET /admin/routing-table"]:
+        if route_key in ["GET /purchase-orders/merchant", "GET /purchase-orders/merchant/{purchase_order_id}", "PUT /admin/routing-table", "GET /admin/routing-table", "DELETE /admin/routing-table/{client_id}"]:
             response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
             response["headers"]["Access-Control-Allow-Credentials"] = "true"
 
         match route_key:
-            case "GET /purchase-orders/merchant" | "GET /purchase-orders/merchant/{purchase_order_id}" | "PUT /admin/routing-table" | "GET /admin/routing-table" if "cookie" not in event["headers"]:
+            case "GET /purchase-orders/merchant" | "GET /purchase-orders/merchant/{purchase_order_id}" | "PUT /admin/routing-table" | "GET /admin/routing-table" | "DELETE /admin/routing-table/{client_id}" if "cookie" not in event["headers"]:
                 response["statusCode"] = 401
                 response["body"] = json.dumps({"message": "please sign in"})
                 return response
@@ -105,7 +105,7 @@ def handler(event, context, route_key, response):
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
-                    {"orders": ddb_response["Items"]}, default=serialize_float)
+                    {"clients": ddb_response["Items"]}, default=serialize_float)
 
             case "PUT /purchase-orders/client":
                 check_hmac(event["body"], event["headers"]["Authorization"])
@@ -122,6 +122,17 @@ def handler(event, context, route_key, response):
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
                     {"message": "purchase order %s received" % ddb_body["purchase_order_id"]})
+
+            case "DELETE /admin/routing-table":
+                print(event)
+                cognito = boto3.client("cognito-idp")
+                token = event["headers"]["cookie"].split("=")[1]
+                cognito.get_user(AccessToken=token)
+
+                dynamodb = boto3.resource('dynamodb')
+                table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+
+                # table.delete_item(Key={"client_id": client_id})
 
             # case "GET /purchase-orders/merchant/{purchase_order_id}":
             #    cognito = boto3.client("cognito-idp")

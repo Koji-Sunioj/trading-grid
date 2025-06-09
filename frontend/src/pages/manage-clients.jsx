@@ -4,8 +4,11 @@ import { useSearchParams } from "react-router";
 export const RoutingTable = () => {
   const [clients, setClients] = useState(null);
   const [queryParams, setQueryParams] = useSearchParams();
+  const headers = ["client_id", "callback", "hmac", "action"];
 
-  useEffect(() => {});
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const fetchClients = async () => {
     const response = await fetch(
@@ -19,9 +22,10 @@ export const RoutingTable = () => {
     const { status } = response;
 
     if (status !== 200) {
-      alert("asd");
+      setClients([]);
     } else {
-      alert("asdasd");
+      const { clients } = await response.json();
+      setClients(clients);
     }
   };
 
@@ -50,13 +54,7 @@ export const RoutingTable = () => {
     );
 
     const { status } = response;
-    alert(status);
-    /* const { message, user } = await response.json();
-    alert(message);
-    if (status === 200) {
-      setAuthorized({ message: "authorized", state: true, user: user });
-      navigate(`/erp`);
-    } */
+    status === 200 ? fetchClients() : alert("there was an error");
     document.getElementById("form-fieldset").disabled = false;
   };
 
@@ -110,43 +108,37 @@ export const RoutingTable = () => {
           </fieldset>
         </form>
       </div>
+      <hr />
+      <h2 class="title has-text-centered mt-2">existing clients</h2>
       <div className="po-table">
-        {/* {purchaseOrders !== null && purchaseOrders.length > 0 && (
+        {clients !== null && clients.length > 0 && (
           <table class="table">
             <thead>
               <tr>
                 {headers.map((header) => (
                   <th key={header}>
-                    <button
-                      onClick={() => {
-                        changeQuery(header);
-                      }}
-                    >
-                      <b>
-                        {header.replace(/_/g, " ")}{" "}
-                        {header === sortBy &&
-                          { desc: "\u2B07", asc: "\u2B06" }[orderBy]}
-                      </b>
-                    </button>
+                    <b>{header}</b>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {purchaseOrders.map((order) => {
-                const { modified, data, purchase_order_id, status } = order;
+              {clients.map((client) => {
+                const { client_id, callback, hmac } = client;
                 return (
-                  <tr key={purchase_order_id}>
-                    <td>{modified}</td>
-                    <td>{purchase_order_id}</td>
-                    <td>{status}</td>
-                    <td>{data.length}</td>
+                  <tr key={client_id}>
+                    <td>{client_id}</td>
+                    <td>{callback}</td>
+                    <td>{hmac}</td>
+                    <td>
+                      <button className="action-button">Delete</button>
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        )} */}
+        )}
       </div>
     </div>
   );

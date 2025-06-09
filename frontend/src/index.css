@@ -31,10 +31,6 @@
     width: 100%;
 }
 
-.table > tbody > tr > td {
-    width: 25%;
-}
-
 #root {
     padding:20px;
 }
@@ -46,4 +42,12 @@
 
 ul {
     list-style:circle  !important;
+}
+
+.action-button {
+    color:red;
+}
+
+.action-button:hover {
+    color:darkred
 }
