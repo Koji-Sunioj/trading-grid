@@ -108,6 +108,8 @@ def handler(event, context, route_key, response):
                     {"clients": ddb_response["Items"]}, default=serialize_float)
 
             case "PUT /purchase-orders/client":
+                print(event)
+
                 check_hmac(event["body"], event["headers"]["Authorization"])
 
                 dynamodb = boto3.resource('dynamodb')
@@ -123,8 +125,7 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"message": "purchase order %s received" % ddb_body["purchase_order_id"]})
 
-            case "DELETE /admin/routing-table":
-                print(event)
+            case "DELETE /admin/routing-table/{client_id}":
                 cognito = boto3.client("cognito-idp")
                 token = event["headers"]["cookie"].split("=")[1]
                 cognito.get_user(AccessToken=token)
@@ -132,7 +133,11 @@ def handler(event, context, route_key, response):
                 dynamodb = boto3.resource('dynamodb')
                 table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
 
-                # table.delete_item(Key={"client_id": client_id})
+                table.delete_item(
+                    Key={"client_id": event["pathParameters"]["client_id"]})
+                response["statusCode"] = 200
+                response["body"] = json.dumps(
+                    {"message": "item successfully deleted"})
 
             # case "GET /purchase-orders/merchant/{purchase_order_id}":
             #    cognito = boto3.client("cognito-idp")

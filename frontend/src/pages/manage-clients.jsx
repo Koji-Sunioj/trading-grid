@@ -4,13 +4,15 @@ import { useSearchParams } from "react-router";
 export const RoutingTable = () => {
   const [clients, setClients] = useState(null);
   const [queryParams, setQueryParams] = useSearchParams();
+  const [UIState, setUIState] = useState({ loading: false, message: null });
   const headers = ["client_id", "callback", "hmac", "action"];
 
   useEffect(() => {
-    fetchClients();
+    fetchClients("fetching from server...");
   }, []);
 
-  const fetchClients = async () => {
+  const fetchClients = async (message) => {
+    setUIState({ loading: true, message: message });
     const response = await fetch(
       import.meta.env.VITE_API + "/admin/routing-table",
       {
@@ -27,6 +29,7 @@ export const RoutingTable = () => {
       const { clients } = await response.json();
       setClients(clients);
     }
+    setUIState({ loading: false, message: null });
   };
 
   const sendClientData = async (event) => {
@@ -54,8 +57,35 @@ export const RoutingTable = () => {
     );
 
     const { status } = response;
-    status === 200 ? fetchClients() : alert("there was an error");
+
+    if (status === 200) {
+      const { message } = await response.json();
+      alert(message);
+      fetchClients("refreshing data...");
+    } else {
+      alert("there was an error");
+    }
+
     document.getElementById("form-fieldset").disabled = false;
+  };
+
+  const deleteClient = async (client_id) => {
+    const response = await fetch(
+      import.meta.env.VITE_API + `/admin/routing-table/${client_id}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
+
+    const { status } = response;
+    if (status === 200) {
+      const { message } = await response.json();
+      alert(message);
+      fetchClients("refreshing data...");
+    } else {
+      alert("there was an error");
+    }
   };
 
   return (
@@ -109,9 +139,17 @@ export const RoutingTable = () => {
         </form>
       </div>
       <hr />
-      <h2 class="title has-text-centered mt-2">existing clients</h2>
+      <div class="has-text-centered mt-2">
+        <h2 class="title">existing clients</h2>
+        <h3
+          class="subtitle"
+          style={{ visibility: UIState.loading ? "visible" : "hidden" }}
+        >
+          {UIState.message}
+        </h3>
+      </div>
       <div className="po-table">
-        {clients !== null && clients.length > 0 && (
+        {clients !== null && clients.length > 0 && !UIState.loading && (
           <table class="table">
             <thead>
               <tr>
@@ -131,7 +169,14 @@ export const RoutingTable = () => {
                     <td>{callback}</td>
                     <td>{hmac}</td>
                     <td>
-                      <button className="action-button">Delete</button>
+                      <button
+                        className="action-button"
+                        onClick={() => {
+                          deleteClient(client_id);
+                        }}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 );
