@@ -2,7 +2,28 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 
 export const RoutingTable = () => {
+  const [clients, setClients] = useState(null);
   const [queryParams, setQueryParams] = useSearchParams();
+
+  useEffect(() => {});
+
+  const fetchClients = async () => {
+    const response = await fetch(
+      import.meta.env.VITE_API + "/admin/routing-table",
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
+
+    const { status } = response;
+
+    if (status !== 200) {
+      alert("asd");
+    } else {
+      alert("asdasd");
+    }
+  };
 
   const sendClientData = async (event) => {
     document.getElementById("form-fieldset").disabled = true;

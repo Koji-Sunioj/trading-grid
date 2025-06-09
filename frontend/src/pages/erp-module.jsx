@@ -8,7 +8,13 @@ export const ERP = () => {
   const [UIState, setUIState] = useState({ loading: false });
   const sortBy = queryParams.get("sort");
   const orderBy = queryParams.get("order");
-  const headers = ["modified", "purchase_order_id", "status", "line_count"];
+  const headers = [
+    "modified",
+    "client_id",
+    "purchase_order_id",
+    "status",
+    "line_count",
+  ];
 
   const invalidParams =
     !headers.includes(sortBy) || !["asc", "desc"].includes(orderBy);
@@ -82,10 +88,12 @@ export const ERP = () => {
             </thead>
             <tbody>
               {purchaseOrders.map((order) => {
-                const { modified, data, purchase_order_id, status } = order;
+                const { modified, client_id, data, purchase_order_id, status } =
+                  order;
                 return (
                   <tr key={purchase_order_id}>
                     <td>{modified}</td>
+                    <td>{client_id}</td>
                     <td>{purchase_order_id}</td>
                     <td>{status}</td>
                     <td>{data.length}</td>

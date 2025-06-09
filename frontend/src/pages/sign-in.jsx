@@ -1,14 +1,9 @@
+import { useContext } from "react";
+import { UserContext } from "../main";
 import { Link, useNavigate } from "react-router";
 
-import { useContext } from "react";
-
-import { UserContext } from "../main";
-
 export const SignIn = () => {
-  const { authorized, setAuthorized } = useContext(UserContext);
-
-  console.log(authorized);
-
+  const { setAuthorized } = useContext(UserContext);
   const navigate = useNavigate();
 
   const signIn = async (event) => {
