@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 import base64
+import traceback
 from jose import jwt
 from datetime import timedelta, datetime, timezone
 
@@ -57,12 +58,12 @@ def handler(event, context):
                 raise Exception("no matching resource")
 
     except Exception as error:
-        print("error name %s" % error.__class__.__name__)
+        print(traceback.format_exc())
         print(error)
         error_message = "an error occurred."
 
         match error.__class__.__name__:
-            case "NotAuthorizedException":
+            case "NotAuthorizedException" | "UserNotFoundException":
                 error_message = "invalid username or password"
             case "Exception":
                 error_message = error.__str__()

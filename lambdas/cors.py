@@ -5,12 +5,15 @@ import traceback
 
 def handler(event, context):
     response = {}
-    try:
-        print(event)
-        accepted_origins = os.environ.get("ACCEPTED_ORIGINS").split(",")
+    response['headers'] = {}
 
-        response["statusCode"] = 200
-        response["body"] = json.dumps({"hello": "man"})
+    try:
+        accepted_origins = os.environ.get("ACCEPTED_ORIGINS").split(",")
+        if event["headers"]["origin"] in accepted_origins:
+            response["statusCode"] = 200
+            response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
+            response["headers"]["Access-Control-Allow-Credentials"] = "true"
+            response["headers"]["Access-Control-Allow-Headers"] = "Content-Type"
 
     except Exception as error:
         print("error name %s" % error.__class__.__name__)

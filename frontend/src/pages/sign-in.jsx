@@ -23,6 +23,9 @@ export const SignIn = () => {
         username: username,
         password: password,
       }),
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
 
     const { status } = response;
