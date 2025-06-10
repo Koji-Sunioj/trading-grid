@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router";
+import { useParams, useSearchParams, Link } from "react-router";
 
 export const ERP = () => {
   const { module } = useParams();
   const [queryParams, setQueryParams] = useSearchParams();
   const [purchaseOrders, setPurchaseOrders] = useState(null);
   const [UIState, setUIState] = useState({ loading: false });
+
   const sortBy = queryParams.get("sort");
   const orderBy = queryParams.get("order");
   const headers = [
@@ -64,7 +65,7 @@ export const ERP = () => {
           Fetching from server...
         </h2>
       </div>
-      <div className="po-table">
+      <div>
         {purchaseOrders !== null && purchaseOrders.length > 0 && (
           <table class="table">
             <thead>
@@ -94,7 +95,11 @@ export const ERP = () => {
                   <tr key={purchase_order_id}>
                     <td>{modified}</td>
                     <td>{client_id}</td>
-                    <td>{purchase_order_id}</td>
+                    <td>
+                      <Link to={`/erp/purchase-orders/${purchase_order_id}`}>
+                        {purchase_order_id}
+                      </Link>
+                    </td>
                     <td>{status}</td>
                     <td>{data.length}</td>
                   </tr>

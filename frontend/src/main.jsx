@@ -1,13 +1,17 @@
 import "./index.css";
 import "bulma/css/bulma.min.css";
-import ReactDOM from "react-dom/client";
-import { Unathorized } from "./pages/403";
+
+import { NavBar } from "./navbar";
 import { SignIn } from "./pages/sign-in";
 import { ERP } from "./pages/erp-module";
-import { RoutingTable } from "./pages/manage-clients";
-import { React, createContext, useState, useEffect } from "react";
+import { Unathorized } from "./pages/403";
 import { LandingPage } from "./pages/landing-page";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router";
+import { RoutingTable } from "./pages/manage-clients";
+import { PurchaseOrder } from "./pages/purchase-order";
+
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router";
+import { React, createContext, useState, useEffect } from "react";
 
 export const UserContext = createContext(null);
 
@@ -42,6 +46,7 @@ const App = () => {
   return (
     <UserContext.Provider value={{ authorized, setAuthorized }}>
       <BrowserRouter>
+        <NavBar />
         <Routes>
           <Route path="/" element={<SignIn />} />
           {authorized.state && (
@@ -49,6 +54,10 @@ const App = () => {
               <Route path="/erp" element={<LandingPage />} />
               <Route path="/erp/manage-clients" element={<RoutingTable />} />
               <Route path="/erp/:module" element={<ERP />} />
+              <Route
+                path="/erp/purchase-orders/:purchase_order"
+                element={<PurchaseOrder />}
+              />
             </>
           )}
           <Route path="*" element={<Unathorized />} />

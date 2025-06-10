@@ -3,8 +3,8 @@ import { UserContext } from "../main";
 import { Link, useNavigate } from "react-router";
 
 export const SignIn = () => {
-  const { setAuthorized } = useContext(UserContext);
   const navigate = useNavigate();
+  const { setAuthorized } = useContext(UserContext);
 
   const signIn = async (event) => {
     document.getElementById("form-fieldset").disabled = true;

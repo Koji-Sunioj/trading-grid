@@ -5,6 +5,7 @@ export const RoutingTable = () => {
   const [clients, setClients] = useState(null);
   const [queryParams, setQueryParams] = useSearchParams();
   const [UIState, setUIState] = useState({ loading: false, message: null });
+
   const headers = ["client_id", "callback", "hmac", "action"];
 
   useEffect(() => {
@@ -29,10 +30,11 @@ export const RoutingTable = () => {
       const { clients } = await response.json();
       setClients(clients);
     }
-    setUIState({ loading: false, message: null });
+    setUIState({ loading: false, message: message });
   };
 
   const sendClientData = async (event) => {
+    document.getElementById("loading-message").classList.add("loading");
     document.getElementById("form-fieldset").disabled = true;
     event.preventDefault();
     const {
@@ -73,6 +75,7 @@ export const RoutingTable = () => {
   };
 
   const deleteClient = async (client_id) => {
+    document.getElementById("loading-message").classList.add("loading");
     const response = await fetch(
       import.meta.env.VITE_API + `/admin/routing-table/${client_id}`,
       {
@@ -142,7 +145,7 @@ export const RoutingTable = () => {
         </form>
       </div>
       <hr />
-      <div class="has-text-centered mt-2">
+      <div class="has-text-centered mt-2 mb-4">
         <h2 class="title">existing clients</h2>
         <h3
           class="subtitle"
@@ -151,8 +154,8 @@ export const RoutingTable = () => {
           {UIState.message}
         </h3>
       </div>
-      <div className="po-table">
-        {clients !== null && clients.length > 0 && !UIState.loading && (
+      <div className={UIState.loading ? "loading" : ""} id="loading-message">
+        {clients !== null && clients.length > 0 && (
           <table class="table">
             <thead>
               <tr>
