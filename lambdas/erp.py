@@ -28,12 +28,12 @@ def validate(function):
         response = {}
         response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
-        if route_key in ["GET /purchase-orders/merchant", "GET /purchase-orders/merchant/{purchase_order_id}", "PUT /admin/routing-table", "GET /admin/routing-table", "DELETE /admin/routing-table/{client_id}"]:
+        if route_key in ["GET /purchase-orders/merchant", "GET /purchase-orders/merchant/{purchase_order_id}", "POST /admin/routing-table", "GET /admin/routing-table", "DELETE /admin/routing-table/{client_id}"]:
             response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
             response["headers"]["Access-Control-Allow-Credentials"] = "true"
 
         match route_key:
-            case "GET /purchase-orders/merchant" | "GET /purchase-orders/merchant/{purchase_order_id}" | "PUT /admin/routing-table" | "GET /admin/routing-table" | "DELETE /admin/routing-table/{client_id}" if "cookie" not in event["headers"]:
+            case "GET /purchase-orders/merchant" | "GET /purchase-orders/merchant/{purchase_order_id}" | "POST /admin/routing-table" | "GET /admin/routing-table" | "DELETE /admin/routing-table/{client_id}" if "cookie" not in event["headers"]:
                 response["statusCode"] = 401
                 response["body"] = json.dumps({"message": "please sign in"})
                 return response
@@ -44,7 +44,7 @@ def validate(function):
                     {"message": "invalid credentials"})
                 return response
 
-        if route_key in ["PUT /admin/routing-table", "PUT /purchase-orders/client"] and event["body"] == None:
+        if route_key in ["POST /admin/routing-table", "PUT /purchase-orders/client"] and event["body"] == None:
             response["statusCode"] = 400
             response["body"] = json.dumps({"message": "no body in request"})
             return response
@@ -81,7 +81,8 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"orders": ddb_response["Items"]}, default=serialize_float)
 
-            case "PUT /admin/routing-table":
+            case "POST /admin/routing-table":
+                print("posting")
                 cognito = boto3.client("cognito-idp")
                 token = event["headers"]["cookie"].split("=")[1]
                 cognito.get_user(AccessToken=token)
@@ -108,8 +109,6 @@ def handler(event, context, route_key, response):
                     {"clients": ddb_response["Items"]}, default=serialize_float)
 
             case "PUT /purchase-orders/client":
-                print(event)
-
                 check_hmac(event["body"], event["headers"]["Authorization"])
 
                 dynamodb = boto3.resource('dynamodb')
@@ -132,20 +131,24 @@ def handler(event, context, route_key, response):
 
                 dynamodb = boto3.resource('dynamodb')
                 table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-
                 table.delete_item(
                     Key={"client_id": event["pathParameters"]["client_id"]})
+
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
                     {"message": "item successfully deleted"})
 
-            # case "GET /purchase-orders/merchant/{purchase_order_id}":
-            #    cognito = boto3.client("cognito-idp")
-            #    token = event["headers"]["cookie"].split("=")[1]
-            #    cognito.get_user(AccessToken=token)
-            #
-            #    response["statusCode"] = 200
-            #    response["body"] = json.dumps({"hello": "man"})
+            case "GET /purchase-orders/merchant/{purchase_order_id}":
+                cognito = boto3.client("cognito-idp")
+                token = event["headers"]["cookie"].split("=")[1]
+                cognito.get_user(AccessToken=token)
+
+                dynamodb = boto3.resource('dynamodb')
+                table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                purchase_order = table.get_item(Key={"purchase_order_id": int(event["pathParameters"]["purchase_order_id"])})
+            
+                response["statusCode"] = 200
+                response["body"] = json.dumps({"purchase_order": purchase_order["Item"]},default=serialize_float)
 
             case _:
                 raise Exception("no matching resource")
