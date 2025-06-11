@@ -55,7 +55,7 @@ const App = () => {
               <Route path="/erp/manage-clients" element={<RoutingTable />} />
               <Route path="/erp/:module" element={<ERP />} />
               <Route
-                path="/erp/purchase-orders/:purchase_order"
+                path="/erp/purchase-orders/:client_id/:purchase_order"
                 element={<PurchaseOrder />}
               />
             </>

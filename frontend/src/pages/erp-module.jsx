@@ -96,7 +96,9 @@ export const ERP = () => {
                     <td>{modified}</td>
                     <td>{client_id}</td>
                     <td>
-                      <Link to={`/erp/purchase-orders/${purchase_order_id}`}>
+                      <Link
+                        to={`/erp/purchase-orders/${client_id}/${purchase_order_id}`}
+                      >
                         {purchase_order_id}
                       </Link>
                     </td>

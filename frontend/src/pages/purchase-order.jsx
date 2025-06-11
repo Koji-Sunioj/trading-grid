@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 
 export const PurchaseOrder = () => {
-  const { purchase_order } = useParams();
+  const { purchase_order, client_id } = useParams();
   const [purchaseOrder, setPurchaseOrder] = useState(null);
   const [UIState, setUIState] = useState({ loading: false });
 
@@ -18,13 +18,14 @@ export const PurchaseOrder = () => {
   ];
 
   useEffect(() => {
-    fetchOrder(purchase_order);
+    fetchOrder();
   }, [purchase_order]);
 
-  const fetchOrder = async (purchase_order) => {
+  const fetchOrder = async () => {
     setUIState({ loading: true });
     const response = await fetch(
-      import.meta.env.VITE_API + `/purchase-orders/merchant/${purchase_order}`,
+      import.meta.env.VITE_API +
+        `/purchase-orders/merchant/${client_id}/${purchase_order}`,
       {
         method: "GET",
         credentials: "include",
@@ -41,12 +42,43 @@ export const PurchaseOrder = () => {
   };
 
   const sendConfirmation = async (event) => {
+    setUIState({ loading: true });
     event.preventDefault();
     const currentForm = new FormData(event.target);
-    currentForm.append("purchase_order_id", purchase_order);
-    for (var pair of currentForm.entries()) {
-      console.log(pair);
-    }
+
+    const payload = {
+      purchase_order_id: Number(purchase_order),
+      client_id: purchaseOrder.client_id,
+      lines: [],
+    };
+
+    const indexes = [
+      ...new Set(
+        Array.from(currentForm.entries()).map((entry) =>
+          Number(entry[0].split("_")[1])
+        )
+      ),
+    ];
+
+    indexes.forEach((index) => {
+      const line = Number(currentForm.get(`line_${index}`));
+      const confirmed = Number(currentForm.get(`confirmed_${index}`));
+      payload.lines.push({ line: line, confirmed: confirmed });
+    });
+
+    const response = await fetch(
+      import.meta.env.VITE_API +
+        `/purchase-orders/merchant/${client_id}/${purchase_order}`,
+      {
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify(payload),
+      }
+    );
+    const { status } = response;
+    console.log(status);
+
+    setUIState({ loading: false });
   };
 
   return (
@@ -92,59 +124,32 @@ export const PurchaseOrder = () => {
                   </thead>
                   <tbody>
                     {purchaseOrder.data.map((poLine) => {
-                      const {
-                        line,
-                        artist_id,
-                        artist,
-                        album_id,
-                        album,
-                        quantity,
-                        line_total,
-                      } = poLine;
                       return (
-                        <tr key={line}>
-                          <td
-                            style={{
-                              padding: "0px",
-                              width: "10%",
-                            }}
-                          >
+                        <tr key={poLine.line}>
+                          <td className="td-input">
                             <input
-                              style={{
-                                borderRadius: "0px",
-                                border: "0px",
-                                display: "table-cell",
-                              }}
                               class="input"
                               type="text"
-                              name={`line_${line}`}
-                              value={line}
+                              name={`line_${poLine.line}`}
+                              value={poLine.line}
                               readOnly
                             ></input>
                           </td>
-                          <td>{artist_id}</td>
-                          <td>{artist}</td>
-                          <td>{album_id}</td>
-                          <td>{album}</td>
-                          <td>{quantity}</td>
-                          <td>{line_total}</td>
-                          <td
-                            style={{
-                              padding: "0px",
-                              width: "10%",
-                            }}
-                          >
+                          <td>{poLine.artist_id}</td>
+                          <td>{poLine.artist}</td>
+                          <td>{poLine.album_id}</td>
+                          <td>{poLine.album}</td>
+                          <td>{poLine.quantity}</td>
+                          <td>{poLine.line_total}</td>
+                          <td className="td-input">
                             <input
                               style={{
-                                borderRadius: "0px",
-                                border: "0px",
                                 color: "#7585FF",
-                                display: "table-cell",
                               }}
                               class="input"
                               type="text"
-                              name={`confirmed_${line}`}
-                              placeholder={quantity}
+                              name={`confirmed_${poLine.line}`}
+                              placeholder={poLine.quantity}
                               required
                             ></input>
                           </td>

@@ -62,3 +62,20 @@ ul {
     left: 50%;
     transform: translate(-50%, -50%);
   }
+
+.td-input {
+    padding: 0px;
+    width: 10%;
+}
+
+.td-input > input {
+    border-radius: 0px;
+    border: 0px;
+    padding: 0px;
+    height: 100%;
+ 
+}
+
+td {
+    vertical-align: middle !important;
+}
