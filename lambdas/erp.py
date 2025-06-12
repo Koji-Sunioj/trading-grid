@@ -164,24 +164,41 @@ def handler(event, context, route_key, response):
                     os.environ.get("PO_AMMENDMENT_TABLE"))
                 ddb_response = ammendments_table.put_item(Item=body)
 
-                if ddb_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
-                    po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
-                    purchase_order = po_table.get_item(
-                        Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
+                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                purchase_order = po_table.get_item(
+                    Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
 
-                    confirmed_lines = []
-                    for ammendment, po_line in zip(ddb_body["lines"], purchase_order["Item"]["data"]):
-                        confirmed_lines.append(ammendment["line"] == int(
-                            po_line["line"]) and ammendment["confirmed"] == int(po_line["quantity"]))
+                confirmed_lines = []
+                for ammendment, po_line in zip(ddb_body["lines"], purchase_order["Item"]["data"]):
+                    confirmed_lines.append(ammendment["line"] == int(
+                        po_line["line"]) and ammendment["confirmed"] == int(po_line["quantity"]))
 
-                    if all(confirmed_lines):
-                        purchase_order["Item"]["status"] = "confirmed"
-                        po_table.put_item(Item=purchase_order["Item"])
+                status = "confirmed" if all(
+                    confirmed_lines) else "pending-buyer"
+                purchase_order["Item"]["status"] = status
+                body["status"] = status
+                po_table.put_item(Item=purchase_order["Item"])
+
+                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+                routing = routing_table.get_item(Key={"client_id": client_id})
+
+                return_payload = json.dumps(body)
+                hmac_hex = hmac.digest(routing["Item"]["hmac"].encode(), str(
+                    return_payload).encode(), digest=hashlib.sha256).hex()
+                headers = {"Authorization": hmac_hex}
+
+                client_response = requests.post(
+                    routing["Item"]["callback"]+"/api/purchase-orders/merchant-response", data=return_payload, headers=headers)
+
+                if client_response.status_code != 200:
+                    response["statusCode"] = 400
+                    response["body"] = json.dumps(
+                        {"message": "error on client's server"})
                 else:
-                    raise Exception("there was a problem")
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps({"hello": "man"})
+                    response["statusCode"] = 200
+                    message = "purchase order %s received at client with order status %s" % (
+                        purchase_order_id, status)
+                    response["body"] = json.dumps({"message": message})
             case _:
                 raise Exception("no matching resource")
 
