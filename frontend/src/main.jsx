@@ -25,13 +25,10 @@ const App = () => {
   useEffect(() => {
     authorized.state === null &&
       (async () => {
-        const response = await fetch(
-          import.meta.env.VITE_API + `/auth/merchant`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
+        const response = await fetch(import.meta.env.VITE_API + `/auth`, {
+          method: "GET",
+          credentials: "include",
+        });
         const { status } = response;
 
         if (status !== 200) {

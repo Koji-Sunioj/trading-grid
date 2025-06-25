@@ -32,7 +32,7 @@ export const ERP = () => {
     setUIState({ loading: true });
     const response = await fetch(
       import.meta.env.VITE_API +
-        `/${module}/merchant?sort=${sortBy}&order=${orderBy}`,
+        `/merchant/${module}?sort=${sortBy}&order=${orderBy}`,
       {
         method: "GET",
         credentials: "include",

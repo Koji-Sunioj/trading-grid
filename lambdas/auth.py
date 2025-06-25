@@ -20,7 +20,7 @@ def handler(event, context):
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
 
         match route_key:
-            case "GET /auth/merchant":
+            case "GET /auth":
                 if "cookie" not in event["headers"]:
                     raise Exception("please log in again")
 
@@ -30,7 +30,7 @@ def handler(event, context):
                 response["body"] = json.dumps(
                     {"user": cognito_response["Username"]})
 
-            case "POST /auth/sign-in":
+            case "POST /auth":
                 if event["body"] != None:
                     body = json.loads(event["body"])
                 else:

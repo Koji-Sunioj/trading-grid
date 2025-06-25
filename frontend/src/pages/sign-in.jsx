@@ -16,7 +16,7 @@ export const SignIn = () => {
       },
     } = event;
 
-    const response = await fetch(import.meta.env.VITE_API + "/auth/sign-in", {
+    const response = await fetch(import.meta.env.VITE_API + "/auth", {
       method: "POST",
       credentials: "include",
       body: JSON.stringify({

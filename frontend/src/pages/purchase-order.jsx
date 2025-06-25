@@ -25,7 +25,7 @@ export const PurchaseOrder = () => {
     setUIState({ loading: true });
     const response = await fetch(
       import.meta.env.VITE_API +
-        `/purchase-orders/merchant/${client_id}/${purchase_order}`,
+        `/merchant/purchase-orders/${client_id}/${purchase_order}`,
       {
         method: "GET",
         credentials: "include",
@@ -68,7 +68,7 @@ export const PurchaseOrder = () => {
 
     const response = await fetch(
       import.meta.env.VITE_API +
-        `/purchase-orders/merchant/${client_id}/${purchase_order}`,
+        `/merchant/purchase-orders/${client_id}/${purchase_order}`,
       {
         method: "POST",
         credentials: "include",

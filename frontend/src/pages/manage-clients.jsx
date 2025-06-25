@@ -15,7 +15,7 @@ export const RoutingTable = () => {
   const fetchClients = async (message) => {
     setUIState({ loading: true, message: message });
     const response = await fetch(
-      import.meta.env.VITE_API + "/admin/routing-table",
+      import.meta.env.VITE_API + "/merchant/routing-table",
       {
         method: "GET",
         credentials: "include",
@@ -46,7 +46,7 @@ export const RoutingTable = () => {
     } = event;
 
     const response = await fetch(
-      import.meta.env.VITE_API + "/admin/routing-table",
+      import.meta.env.VITE_API + "/merchant/routing-table",
       {
         method: "POST",
         credentials: "include",
@@ -77,7 +77,7 @@ export const RoutingTable = () => {
   const deleteClient = async (client_id) => {
     document.getElementById("loading-message").classList.add("loading");
     const response = await fetch(
-      import.meta.env.VITE_API + `/admin/routing-table/${client_id}`,
+      import.meta.env.VITE_API + `/merchant/routing-table/${client_id}`,
       {
         method: "DELETE",
         credentials: "include",

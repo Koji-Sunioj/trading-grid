@@ -28,25 +28,24 @@ def validate(function):
         response = {}
         response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
-        if route_key in ["GET /purchase-orders/merchant", "GET /purchase-orders/merchant/{client_id}/{purchase_order_id}", "POST /admin/routing-table", "GET /admin/routing-table", "DELETE /admin/routing-table/{client_id}", "POST /purchase-orders/merchant/{client_id}/{purchase_order_id}"]:
+        if "/merchant" in event['resource']:
+            cognito = boto3.client("cognito-idp")
+            token = event["headers"]["cookie"].split("=")[1]
+            cognito.get_user(AccessToken=token)
             response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
             response["headers"]["Access-Control-Allow-Credentials"] = "true"
 
-        match route_key:
-            case "GET /purchase-orders/merchant" | "GET /purchase-orders/merchant/{client_id}/{purchase_order_id}" | "POST /admin/routing-table" | "GET /admin/routing-table" | "DELETE /admin/routing-table/{client_id}" | "POST /purchase-orders/merchant/{client_id}/{purchase_order_id}" if "cookie" not in event["headers"]:
-                response["statusCode"] = 401
-                response["body"] = json.dumps({"message": "please sign in"})
-                return response
-
-            case "PUT /purchase-orders/client" if "Authorization" not in event["headers"]:
-                response["statusCode"] = 401
-                response["body"] = json.dumps(
-                    {"message": "invalid credentials"})
-                return response
-
-        if route_key in ["POST /admin/routing-table", "PUT /purchase-orders/client", "POST /purchase-orders/merchant/{client_id}/{purchase_order_id}"] and event["body"] == None:
+        if event["httpMethod"] in ["POST", "PUT"] and event["body"] == None:
             response["statusCode"] = 400
             response["body"] = json.dumps({"message": "no body in request"})
+            return response
+
+        invalid_client = "/client" in event['resource'] and "Authorization" not in event["headers"]
+        invalid_merchant = "/merchant" in event['resource'] and "cookie" not in event["headers"]
+
+        if invalid_client or invalid_merchant:
+            response["statusCode"] = 401
+            response["body"] = json.dumps({"message": "invalid credentials"})
             return response
 
         return function(*args, route_key, response)
@@ -57,13 +56,9 @@ def validate(function):
 def handler(event, context, route_key, response):
     try:
         dynamodb = boto3.resource('dynamodb')
-
+        print(route_key)
         match route_key:
-            case "GET /purchase-orders/merchant":
-                cognito = boto3.client("cognito-idp")
-                token = event["headers"]["cookie"].split("=")[1]
-                cognito.get_user(AccessToken=token)
-
+            case "GET /merchant/purchase-orders":
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 ddb_response = table.scan()
 
@@ -82,12 +77,7 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"orders": ddb_response["Items"]}, default=serialize_float)
 
-            case "POST /admin/routing-table":
-                print("posting")
-                cognito = boto3.client("cognito-idp")
-                token = event["headers"]["cookie"].split("=")[1]
-                cognito.get_user(AccessToken=token)
-
+            case "POST /merchant/routing-table":
                 table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
                 table.put_item(Item=json.loads(event["body"]))
 
@@ -95,11 +85,7 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"message": "client created successfully"})
 
-            case "GET /admin/routing-table":
-                cognito = boto3.client("cognito-idp")
-                token = event["headers"]["cookie"].split("=")[1]
-                cognito.get_user(AccessToken=token)
-
+            case "GET /merchant/routing-table":
                 table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
                 ddb_response = table.scan()
 
@@ -107,7 +93,7 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"clients": ddb_response["Items"]}, default=serialize_float)
 
-            case "PUT /purchase-orders/client":
+            case "PUT /client/purchase-orders":
                 check_hmac(event["body"], event["headers"]["Authorization"])
 
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
@@ -122,11 +108,7 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"message": "purchase order %s received" % ddb_body["purchase_order_id"]})
 
-            case "DELETE /admin/routing-table/{client_id}":
-                cognito = boto3.client("cognito-idp")
-                token = event["headers"]["cookie"].split("=")[1]
-                cognito.get_user(AccessToken=token)
-
+            case "DELETE /merchant/routing-table/{client_id}":
                 table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
                 table.delete_item(
                     Key={"client_id": event["pathParameters"]["client_id"]})
@@ -135,13 +117,11 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"message": "item successfully deleted"})
 
-            case "GET /purchase-orders/merchant/{client_id}/{purchase_order_id}":
+                print(response)
+
+            case "GET /merchant/purchase-orders/{client_id}/{purchase_order_id}":
                 purchase_order_id, client_id = int(
                     event["pathParameters"]["purchase_order_id"]), event["pathParameters"]["client_id"]
-
-                cognito = boto3.client("cognito-idp")
-                token = event["headers"]["cookie"].split("=")[1]
-                cognito.get_user(AccessToken=token)
 
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 purchase_order = table.get_item(
@@ -151,13 +131,9 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"purchase_order": purchase_order["Item"]}, default=serialize_float)
 
-            case "POST /purchase-orders/merchant/{client_id}/{purchase_order_id}":
+            case "POST /merchant/purchase-orders/{client_id}/{purchase_order_id}":
                 purchase_order_id, client_id = int(
                     event["pathParameters"]["purchase_order_id"]), event["pathParameters"]["client_id"]
-
-                cognito = boto3.client("cognito-idp")
-                token = event["headers"]["cookie"].split("=")[1]
-                cognito.get_user(AccessToken=token)
 
                 body = ddb_body = json.loads(event["body"])
                 ammendments_table = dynamodb.Table(
