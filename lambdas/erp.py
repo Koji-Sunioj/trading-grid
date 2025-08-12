@@ -7,6 +7,7 @@ import requests
 import traceback
 from decimal import Decimal
 from functools import wraps
+from datetime import datetime, timezone
 
 
 def serialize_float(obj):
@@ -124,8 +125,20 @@ def handler(event, context, route_key, response):
                     event["pathParameters"]["purchase_order_id"]), event["pathParameters"]["client_id"]
 
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                ammendments_table = dynamodb.Table(
+                    os.environ.get("PO_AMMENDMENT_TABLE"))
+
+                purchase_order_lines = ammendments_table.get_item(
+                    Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
+
                 purchase_order = table.get_item(
                     Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
+
+                if "Item" in purchase_order_lines:
+                    for confirmed_line, line in zip(purchase_order_lines["Item"]["lines"], enumerate(purchase_order["Item"]["data"])):
+                        line_index, order_line = line
+                        if int(confirmed_line["line"]) == int(order_line["line"]):
+                            purchase_order["Item"]["data"][line_index]["confirmed"] = confirmed_line["confirmed"]
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
@@ -151,8 +164,13 @@ def handler(event, context, route_key, response):
 
                 status = "confirmed" if all(
                     confirmed_lines) else "pending-buyer"
+                new_modified = datetime.now(
+                    timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
                 purchase_order["Item"]["status"] = status
+                purchase_order["Item"]["modified"] = new_modified
                 body["status"] = status
+                body["modified"] = new_modified
                 po_table.put_item(Item=purchase_order["Item"])
 
                 routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))

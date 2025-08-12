@@ -17,7 +17,7 @@ export const LandingPage = () => {
             <Link
               to={{
                 pathname: "/erp/purchase-orders",
-                search: "?sort=modified&order=asc",
+                search: "?sort=modified&order=desc",
               }}
             >
               Purchase Orders

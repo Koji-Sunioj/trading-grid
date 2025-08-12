@@ -61,9 +61,11 @@ export const PurchaseOrder = () => {
     ];
 
     indexes.forEach((index) => {
-      const line = Number(currentForm.get(`line_${index}`));
-      const confirmed = Number(currentForm.get(`confirmed_${index}`));
-      payload.lines.push({ line: line, confirmed: confirmed });
+      payload.lines.push({
+        line: Number(currentForm.get(`line_${index}`)),
+        confirmed: Number(currentForm.get(`confirmed_${index}`)),
+        album_id: Number(currentForm.get(`album_${index}`)),
+      });
     });
 
     const response = await fetch(
@@ -76,8 +78,13 @@ export const PurchaseOrder = () => {
       }
     );
     const { status } = response;
-    console.log(status);
 
+    if (status === 200) {
+      fetchOrder();
+    }
+    alert(
+      `purchase order ${purchase_order} has been updated at ${client_id}'s server`
+    );
     setUIState({ loading: false });
   };
 
@@ -99,10 +106,9 @@ export const PurchaseOrder = () => {
             <h2 class="subtitle mb-1">client: {purchaseOrder.client_id}</h2>
             <h2 class="subtitle mb-1">
               order total:{" "}
-              {purchaseOrder.data.reduce(
-                (prev, next) => prev + next.line_total,
-                0
-              )}
+              {purchaseOrder.data
+                .reduce((prev, next) => prev + next.line_total, 0)
+                .toFixed(2)}
             </h2>
             <h2 class="subtitle mb-1">status: {purchaseOrder.status}</h2>
             <h2 class="subtitle mb-1">modified: {purchaseOrder.modified}</h2>
@@ -113,7 +119,7 @@ export const PurchaseOrder = () => {
               <h2 class="title">order lines</h2>
             </div>
             <form onSubmit={sendConfirmation}>
-              <fieldset id="form-fieldset">
+              <fieldset id="form-fieldset" disabled={UIState.loading}>
                 <table class="table">
                   <thead>
                     <tr>
@@ -137,19 +143,32 @@ export const PurchaseOrder = () => {
                           </td>
                           <td>{poLine.artist_id}</td>
                           <td>{poLine.artist}</td>
-                          <td>{poLine.album_id}</td>
+                          <td className="td-input">
+                            <input
+                              class="input"
+                              type="text"
+                              name={`album_${poLine.line}`}
+                              value={poLine.album_id}
+                              readOnly
+                            ></input>
+                          </td>
                           <td>{poLine.album}</td>
                           <td>{poLine.quantity}</td>
                           <td>{poLine.line_total}</td>
                           <td className="td-input">
                             <input
                               style={{
-                                color: "#7585FF",
+                                color: "red",
                               }}
                               class="input"
                               type="text"
                               name={`confirmed_${poLine.line}`}
                               placeholder={poLine.quantity}
+                              value={
+                                poLine.hasOwnProperty("confirmed")
+                                  ? poLine.confirmed
+                                  : undefined
+                              }
                               required
                             ></input>
                           </td>

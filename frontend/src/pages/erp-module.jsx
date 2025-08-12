@@ -22,7 +22,7 @@ export const ERP = () => {
 
   useEffect(() => {
     if (invalidParams) {
-      setQueryParams({ sort: "modified", order: "asc" });
+      setQueryParams({ sort: "modified", order: "desc" });
     } else {
       fetchOrders();
     }
