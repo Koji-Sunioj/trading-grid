@@ -21,6 +21,13 @@ def check_hmac(payload, client_hmac):
         raise Exception("invalid credentials")
 
 
+def search(dicts, key, value):
+    try:
+        return next(n for n in dicts if n[key] == value)
+    except:
+        return None
+
+
 def validate(function):
     @wraps(function)
     def lambda_request(*args):
@@ -96,9 +103,37 @@ def handler(event, context, route_key, response):
 
             case "PUT /client/purchase-orders":
                 check_hmac(event["body"], event["headers"]["Authorization"])
+                ddb_body = json.loads(event["body"], parse_float=Decimal)
 
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
-                ddb_body = json.loads(event["body"], parse_float=Decimal)
+                ammendments_table = dynamodb.Table(
+                    os.environ.get("PO_AMMENDMENT_TABLE"))
+
+                purchase_order_lines = ammendments_table.get_item(
+                    Key={"purchase_order_id": ddb_body["purchase_order_id"], "client_id": ddb_body["client_id"]})
+                keep_lines = None
+
+                if "Item" in purchase_order_lines:
+                    new_albums = [line["album_id"]
+                                  for line in ddb_body["data"]]
+                    keep_lines = [line for line in purchase_order_lines["Item"]["lines"] if int(
+                        line["album_id"]) in new_albums]
+
+                    for n, line in enumerate(keep_lines):
+                        album = search(
+                            ddb_body["data"], "album_id", int(line["album_id"]))
+                        if album != None:
+                            keep_lines[n]["line"] = Decimal(album["line"])
+
+                if keep_lines != None and len(keep_lines) > 0:
+                    purchase_order_lines["Item"]["lines"] = keep_lines
+                    ammendments_table.put_item(
+                        Item=purchase_order_lines["Item"])
+
+                elif keep_lines != None and len(keep_lines) == 0:
+                    ammendments_table.delete_item(
+                        Key={"purchase_order_id": ddb_body["purchase_order_id"], "client_id": ddb_body["client_id"]})
+
                 ddb_response = table.put_item(Item=ddb_body)
 
                 if ddb_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
@@ -118,8 +153,6 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"message": "item successfully deleted"})
 
-                print(response)
-
             case "GET /merchant/purchase-orders/{client_id}/{purchase_order_id}":
                 purchase_order_id, client_id = int(
                     event["pathParameters"]["purchase_order_id"]), event["pathParameters"]["client_id"]
@@ -135,9 +168,10 @@ def handler(event, context, route_key, response):
                     Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
 
                 if "Item" in purchase_order_lines:
-                    for confirmed_line, line in zip(purchase_order_lines["Item"]["lines"], enumerate(purchase_order["Item"]["data"])):
-                        line_index, order_line = line
-                        if int(confirmed_line["line"]) == int(order_line["line"]):
+                    for line_index, line in enumerate(purchase_order["Item"]["data"]):
+                        confirmed_line = search(
+                            purchase_order_lines["Item"]["lines"], "line", line["line"])
+                        if confirmed_line != None:
                             purchase_order["Item"]["data"][line_index]["confirmed"] = confirmed_line["confirmed"]
 
                 response["statusCode"] = 200
