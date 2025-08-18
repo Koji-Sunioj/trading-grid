@@ -88,6 +88,15 @@ export const PurchaseOrder = () => {
     setUIState({ loading: false });
   };
 
+  const checkShit = (event, htmlLine) => {
+    event.preventDefault();
+    const lines = [...purchaseOrder["data"]];
+    const line = lines.find((line) => line.line === Number(htmlLine));
+    if (Number(event.target.value) > line.quantity) {
+      event.target.value = "";
+    }
+  };
+
   return (
     <div>
       <div class="has-text-centered mb-4">
@@ -164,11 +173,14 @@ export const PurchaseOrder = () => {
                               type="text"
                               name={`confirmed_${poLine.line}`}
                               placeholder={poLine.quantity}
-                              value={
+                              defaultValue={
                                 poLine.hasOwnProperty("confirmed")
                                   ? poLine.confirmed
                                   : undefined
                               }
+                              onChange={(event) => {
+                                checkShit(event, poLine.line);
+                              }}
                               required
                             ></input>
                           </td>
