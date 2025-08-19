@@ -9,14 +9,19 @@ from decimal import Decimal
 from functools import wraps
 from datetime import datetime, timezone
 
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+clients = table.scan()["Items"]
+
 
 def serialize_float(obj):
     return float(obj)
 
 
-def check_hmac(payload, client_hmac):
-    correct_hmac = hmac.digest(os.environ.get(
-        "TOKEN_KEY").encode(), payload.encode(), digest=hashlib.sha256).hex()
+def check_hmac(payload, client_hmac, client_id):
+    client = search(clients, "client_id", client_id)
+    correct_hmac = hmac.digest(client["hmac"].encode(
+    ), payload.encode(), digest=hashlib.sha256).hex()
     if not hmac.compare_digest(client_hmac, correct_hmac):
         raise Exception("invalid credentials")
 
@@ -63,13 +68,11 @@ def validate(function):
 @validate
 def handler(event, context, route_key, response):
     try:
-        dynamodb = boto3.resource('dynamodb')
-        print(route_key)
         match route_key:
             case "GET /merchant/purchase-orders":
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 ddb_response = table.scan()
-
+                print(clients)
                 sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "modified"
                 order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
                 desc = order_by == "desc"
@@ -102,8 +105,9 @@ def handler(event, context, route_key, response):
                     {"clients": ddb_response["Items"]}, default=serialize_float)
 
             case "PUT /client/purchase-orders":
-                check_hmac(event["body"], event["headers"]["Authorization"])
                 ddb_body = json.loads(event["body"], parse_float=Decimal)
+                check_hmac(event["body"], event["headers"]
+                           ["Authorization"], ddb_body["client_id"])
 
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 ammendments_table = dynamodb.Table(
@@ -182,17 +186,20 @@ def handler(event, context, route_key, response):
                 purchase_order_id, client_id = int(
                     event["pathParameters"]["purchase_order_id"]), event["pathParameters"]["client_id"]
 
-                body = ddb_body = json.loads(event["body"])
-                ammendments_table = dynamodb.Table(
-                    os.environ.get("PO_AMMENDMENT_TABLE"))
-                ddb_response = ammendments_table.put_item(Item=body)
-
                 po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 purchase_order = po_table.get_item(
                     Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
 
+                if purchase_order["Item"]["status"] == "confirmed":
+                    raise Exception("this purchase order is completed")
+
+                body = json.loads(event["body"])
+                ammendments_table = dynamodb.Table(
+                    os.environ.get("PO_AMMENDMENT_TABLE"))
+                ammendments_table.put_item(Item=body)
+
                 confirmed_lines = []
-                for ammendment, po_line in zip(ddb_body["lines"], purchase_order["Item"]["data"]):
+                for ammendment, po_line in zip(body["lines"], purchase_order["Item"]["data"]):
                     confirmed_lines.append(ammendment["line"] == int(
                         po_line["line"]) and ammendment["confirmed"] == int(po_line["quantity"]))
 

@@ -80,15 +80,19 @@ export const PurchaseOrder = () => {
     const { status } = response;
 
     if (status === 200) {
+      alert(
+        `purchase order ${purchase_order} has been updated at ${client_id}'s server`
+      );
       fetchOrder();
+    } else {
+      const { message } = await response.json();
+      alert(message);
     }
-    alert(
-      `purchase order ${purchase_order} has been updated at ${client_id}'s server`
-    );
+
     setUIState({ loading: false });
   };
 
-  const checkShit = (event, htmlLine) => {
+  const controlQuantity = (event, htmlLine) => {
     event.preventDefault();
     const lines = [...purchaseOrder["data"]];
     const line = lines.find((line) => line.line === Number(htmlLine));
@@ -128,7 +132,12 @@ export const PurchaseOrder = () => {
               <h2 class="title">order lines</h2>
             </div>
             <form onSubmit={sendConfirmation}>
-              <fieldset id="form-fieldset" disabled={UIState.loading}>
+              <fieldset
+                id="form-fieldset"
+                disabled={
+                  UIState.loading || purchaseOrder.status === "confirmed"
+                }
+              >
                 <table class="table">
                   <thead>
                     <tr>
@@ -179,7 +188,7 @@ export const PurchaseOrder = () => {
                                   : undefined
                               }
                               onChange={(event) => {
-                                checkShit(event, poLine.line);
+                                controlQuantity(event, poLine.line);
                               }}
                               required
                             ></input>
