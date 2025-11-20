@@ -70,6 +70,32 @@ def validate(function):
 def handler(event, context, route_key, response):
     try:
         match route_key:
+
+            case "GET /merchant/routing-table":
+                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+                clients = routing_table.scan()
+
+                response["statusCode"] = 200
+                response["body"] = json.dumps(
+                    {"clients": clients["Items"]}, default=serialize_float)
+
+            case "POST /merchant/routing-table":
+                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+                routing_table.put_item(Item=json.loads(event["body"]))
+
+                response["statusCode"] = 200
+                response["body"] = json.dumps(
+                    {"message": "client created successfully"})
+
+            case "DELETE /merchant/routing-table/{client_id}":
+                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+                routing_table.delete_item(
+                    Key={"client_id": event["pathParameters"]["client_id"]})
+
+                response["statusCode"] = 200
+                response["body"] = json.dumps(
+                    {"message": "item successfully deleted"})
+
             case "GET /merchant/purchase-orders":
                 po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 purchase_orders = po_table.scan()
@@ -89,21 +115,28 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"orders": purchase_orders["Items"]}, default=serialize_float)
 
-            case "POST /merchant/routing-table":
-                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-                routing_table.put_item(Item=json.loads(event["body"]))
+            case "GET /merchant/purchase-orders/{client_id}/{purchase_order_id}":
+
+                po_key = {"purchase_order_id":  int(
+                    event["pathParameters"]["purchase_order_id"]), "client_id":  event["pathParameters"]["client_id"]}
+
+                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                ammendments_table = dynamodb.Table(
+                    os.environ.get("PO_AMMENDMENT_TABLE"))
+
+                purchase_order = po_table.get_item(Key=po_key)
+                purchase_order_lines = ammendments_table.get_item(Key=po_key)
+
+                if "Item" in purchase_order_lines:
+                    for line_index, line in enumerate(purchase_order["Item"]["data"]):
+                        confirmed_line = search(
+                            purchase_order_lines["Item"]["lines"], "line", line["line"])
+                        if confirmed_line != None:
+                            purchase_order["Item"]["data"][line_index]["confirmed"] = confirmed_line["confirmed"]
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
-                    {"message": "client created successfully"})
-
-            case "GET /merchant/routing-table":
-                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-                clients = routing_table.scan()
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"clients": clients["Items"]}, default=serialize_float)
+                    {"purchase_order": purchase_order["Item"]}, default=serialize_float)
 
             case "PUT /client/purchase-orders":
                 payload = json.loads(event["body"], parse_float=Decimal)
@@ -164,38 +197,6 @@ def handler(event, context, route_key, response):
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
                     {"message": "purchase order %s received" % payload["purchase_order_id"]})
-
-            case "DELETE /merchant/routing-table/{client_id}":
-                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-                routing_table.delete_item(
-                    Key={"client_id": event["pathParameters"]["client_id"]})
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"message": "item successfully deleted"})
-
-            case "GET /merchant/purchase-orders/{client_id}/{purchase_order_id}":
-
-                po_key = {"purchase_order_id":  int(
-                    event["pathParameters"]["purchase_order_id"]), "client_id":  event["pathParameters"]["client_id"]}
-
-                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
-                ammendments_table = dynamodb.Table(
-                    os.environ.get("PO_AMMENDMENT_TABLE"))
-
-                purchase_order = po_table.get_item(Key=po_key)
-                purchase_order_lines = ammendments_table.get_item(Key=po_key)
-
-                if "Item" in purchase_order_lines:
-                    for line_index, line in enumerate(purchase_order["Item"]["data"]):
-                        confirmed_line = search(
-                            purchase_order_lines["Item"]["lines"], "line", line["line"])
-                        if confirmed_line != None:
-                            purchase_order["Item"]["data"][line_index]["confirmed"] = confirmed_line["confirmed"]
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"purchase_order": purchase_order["Item"]}, default=serialize_float)
 
             case "POST /merchant/purchase-orders/{client_id}/{purchase_order_id}":
                 purchase_order_id, client_id = int(
