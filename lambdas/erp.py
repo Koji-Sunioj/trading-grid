@@ -8,6 +8,7 @@ import traceback
 from decimal import Decimal
 from functools import wraps
 from datetime import datetime, timezone
+from boto3.dynamodb.conditions import Attr
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
@@ -70,8 +71,8 @@ def handler(event, context, route_key, response):
     try:
         match route_key:
             case "GET /merchant/purchase-orders":
-                table = dynamodb.Table(os.environ.get("PO_TABLE"))
-                ddb_response = table.scan()
+                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                ddb_response = po_table.scan()
 
                 sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "modified"
                 order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
@@ -113,11 +114,20 @@ def handler(event, context, route_key, response):
                     "purchase_order_id": ddb_body["purchase_order_id"], "client_id": ddb_body["client_id"]}
 
                 po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
-                current_po = po_table.get_item(
-                    Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
-
+                current_po = po_table.get_item(Key=po_key)
                 print(current_po)
-                raise Exception("asdasd")
+
+                if "Item" in current_po and current_po["Item"]["status"] != "pending-buyer":
+                    raise Exception(
+                        "please check the status of your purchase order before sending.")
+                elif "Item" not in current_po:
+                    other_client_pos = po_table.scan(
+                        FilterExpression=Attr("status").eq(
+                            "pending-supplier") & Attr("client_id").eq(ddb_body["client_id"])
+                    )
+                    if other_client_pos["Count"] > 0:
+                        raise Exception(
+                            "a pending order already exists. please complete that first.")
 
                 ammendments_table = dynamodb.Table(
                     os.environ.get("PO_AMMENDMENT_TABLE"))
