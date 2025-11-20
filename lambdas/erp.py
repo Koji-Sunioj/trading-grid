@@ -72,7 +72,7 @@ def handler(event, context, route_key, response):
             case "GET /merchant/purchase-orders":
                 table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 ddb_response = table.scan()
-                print(clients)
+
                 sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "modified"
                 order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
                 desc = order_by == "desc"
@@ -109,12 +109,19 @@ def handler(event, context, route_key, response):
                 check_hmac(event["body"], event["headers"]
                            ["Authorization"], ddb_body["client_id"])
 
-                table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                po_key = {
+                    "purchase_order_id": ddb_body["purchase_order_id"], "client_id": ddb_body["client_id"]}
+
+                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                current_po = po_table.get_item(
+                    Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
+
+                print(current_po)
+                raise Exception("asdasd")
+
                 ammendments_table = dynamodb.Table(
                     os.environ.get("PO_AMMENDMENT_TABLE"))
-
-                purchase_order_lines = ammendments_table.get_item(
-                    Key={"purchase_order_id": ddb_body["purchase_order_id"], "client_id": ddb_body["client_id"]})
+                purchase_order_lines = ammendments_table.get_item(Key=po_key)
                 keep_lines = None
 
                 if "Item" in purchase_order_lines:
@@ -138,7 +145,7 @@ def handler(event, context, route_key, response):
                     ammendments_table.delete_item(
                         Key={"purchase_order_id": ddb_body["purchase_order_id"], "client_id": ddb_body["client_id"]})
 
-                ddb_response = table.put_item(Item=ddb_body)
+                ddb_response = po_table.put_item(Item=ddb_body)
 
                 if ddb_response["ResponseMetadata"]["HTTPStatusCode"] != 200:
                     raise Exception(
