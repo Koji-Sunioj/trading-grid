@@ -5,7 +5,7 @@ import boto3
 import hashlib
 import requests
 import traceback
-from decimal import Decimal
+from decimal import Decimal, Context
 from functools import wraps
 from datetime import datetime, timezone
 from boto3.dynamodb.conditions import Attr
@@ -76,8 +76,24 @@ def handler(event, context, route_key, response, clients):
                     {"clients": clients}, default=serialize_float)
 
             case "POST /merchant/routing-table":
+                payload = json.loads(event["body"])
+                lookup_headers = {"Authorization": "%s" %
+                                  os.environ.get("TOKEN_KEY")}
+
+                address_lookup = requests.get(
+                    "https://api.radar.io/v1/geocode/forward?query=%s" % payload["address"], headers=lookup_headers)
+
+                if address_lookup.status_code != 200:
+                    raise Exception("address is not valid")
+
+                address_response = address_lookup.json()
+                lat, long = address_response["addresses"][0]["latitude"], address_response["addresses"][0]["longitude"]
+                decimal_prec = Context(prec=6)
+                payload["coords"] = {"latitude": decimal_prec.create_decimal_from_float(
+                    lat), "longitude": decimal_prec.create_decimal_from_float(long)}
+
                 routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-                routing_table.put_item(Item=json.loads(event["body"]))
+                routing_table.put_item(Item=payload)
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
@@ -140,6 +156,14 @@ def handler(event, context, route_key, response, clients):
                 payload = json.loads(event["body"], parse_float=Decimal)
                 check_hmac(event["body"], event["headers"]
                            ["Authorization"], payload["client_id"])
+
+                # distance_lookup = requests.get(
+                #    "https://api.radar.io/v1/route/distance?origin=%s&destination=%s,%s&modes=car&units=metric" % (os.environ.get("STORE_COORDS"),lat, long), headers=lookup_headers)
+                #
+                # if distance_lookup.status_code != 200:
+                #    raise Exception("distance between store and client could not be determined accurately")
+                #
+                # kilometers = round(distance_lookup.json()["routes"]["geodesic"]["distance"]["value"] / 1000)
 
                 po_key = {
                     "purchase_order_id": payload["purchase_order_id"], "client_id": payload["client_id"]}
