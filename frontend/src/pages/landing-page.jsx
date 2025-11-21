@@ -7,11 +7,11 @@ export const LandingPage = () => {
 
   return (
     <div>
-      <div class="has-text-centered mb-4">
-        <h1 class="title">Welcome {authorized.user}</h1>
-        <h2 class="subtitle">Click on a module below to get started.</h2>
+      <div className="has-text-centered mb-4">
+        <h1 className="title">Welcome {authorized.user}</h1>
+        <h2 className="subtitle">Click on a module below to get started.</h2>
       </div>
-      <div class="sign-in">
+      <div className="sign-in">
         <ul>
           <li>
             <Link
@@ -28,12 +28,14 @@ export const LandingPage = () => {
           </li>
         </ul>
       </div>
-      <section class="section">
-        <div class="has-text-centered mb-4">
-          <h2 class="title">Manage clients</h2>
-          <h2 class="subtitle">Routings, authentication and identifiers.</h2>
+      <section className="section">
+        <div className="has-text-centered mb-4">
+          <h2 className="title">Manage clients</h2>
+          <h2 className="subtitle">
+            Routings, authentication and identifiers.
+          </h2>
         </div>
-        <div class="sign-in">
+        <div className="sign-in">
           <ul>
             <li>
               <Link to={{ pathname: "/erp/manage-clients" }}>

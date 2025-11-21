@@ -25,7 +25,7 @@ export const NavBar = () => {
   }
 
   return (
-    <nav class="breadcrumb" aria-label="breadcrumbs">
+    <nav className="breadcrumb" aria-label="breadcrumbs">
       <ul>
         {routes.map((route) => (
           <li key={route.name}>

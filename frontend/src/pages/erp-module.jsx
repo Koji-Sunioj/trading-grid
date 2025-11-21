@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router";
 
 export const ERP = () => {
-  const { module } = useParams();
+  const { module, client_id } = useParams();
   const [queryParams, setQueryParams] = useSearchParams();
   const [purchaseOrders, setPurchaseOrders] = useState(null);
   const [UIState, setUIState] = useState({ loading: false });
@@ -30,14 +30,16 @@ export const ERP = () => {
 
   const fetchOrders = async () => {
     setUIState({ loading: true });
-    const response = await fetch(
-      import.meta.env.VITE_API +
-        `/merchant/${module}?sort=${sortBy}&order=${orderBy}`,
-      {
-        method: "GET",
-        credentials: "include",
-      }
-    );
+
+    let endpoint = `/merchant/${module}?sort=${sortBy}&order=${orderBy}`;
+    if (client_id !== undefined) {
+      endpoint += `&client_id=${client_id}`;
+    }
+
+    const response = await fetch(import.meta.env.VITE_API + endpoint, {
+      method: "GET",
+      credentials: "include",
+    });
     const { status } = response;
 
     if (status !== 200) {
@@ -56,10 +58,10 @@ export const ERP = () => {
 
   return (
     <div>
-      <div class="has-text-centered mb-4">
-        <h1 class="title">module: {module}</h1>
+      <div className="has-text-centered mb-4">
+        <h1 className="title">module: {module}</h1>
         <h2
-          class="subtitle"
+          className="subtitle"
           style={{ visibility: UIState.loading ? "visible" : "hidden" }}
         >
           Fetching from server...
@@ -67,7 +69,7 @@ export const ERP = () => {
       </div>
       <div>
         {purchaseOrders !== null && purchaseOrders.length > 0 && (
-          <table class="table">
+          <table className="table">
             <thead>
               <tr>
                 {headers.map((header) => (
@@ -94,7 +96,11 @@ export const ERP = () => {
                 return (
                   <tr key={purchase_order_id}>
                     <td>{modified}</td>
-                    <td>{client_id}</td>
+                    <td>
+                      <Link to={`/erp/${module}/${client_id}`}>
+                        {client_id}
+                      </Link>
+                    </td>
                     <td>
                       <Link
                         to={`/erp/purchase-orders/${client_id}/${purchase_order_id}`}

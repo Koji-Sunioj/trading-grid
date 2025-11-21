@@ -40,18 +40,18 @@ export const SignIn = () => {
 
   return (
     <div>
-      <div class="has-text-centered mb-4">
-        <h1 class="title">Welcome to the Trading Grid</h1>
-        <h2 class="subtitle">Sign in to access your ERP modules.</h2>
+      <div className="has-text-centered mb-4">
+        <h1 className="title">Welcome to the Trading Grid</h1>
+        <h2 className="subtitle">Sign in to access your ERP modules.</h2>
       </div>
       <div>
-        <div class="sign-in">
+        <div className="sign-in">
           <form onSubmit={signIn}>
             <fieldset id="form-fieldset">
-              <div class="field">
-                <p class="control">
+              <div className="field">
+                <p className="control">
                   <input
-                    class="input"
+                    className="input"
                     type="text"
                     name="username"
                     placeholder="username"
@@ -59,10 +59,10 @@ export const SignIn = () => {
                   ></input>
                 </p>
               </div>
-              <div class="field">
-                <p class="control">
+              <div className="field">
+                <p className="control">
                   <input
-                    class="input"
+                    className="input"
                     type="password"
                     placeholder="password"
                     name="password"
@@ -70,9 +70,9 @@ export const SignIn = () => {
                   ></input>
                 </p>
               </div>
-              <div class="field">
-                <p class="control">
-                  <button class="button is-success">Sign in</button>
+              <div className="field">
+                <p className="control">
+                  <button className="button is-success">Sign in</button>
                 </p>
               </div>
             </fieldset>

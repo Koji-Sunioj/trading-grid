@@ -11,8 +11,7 @@ from datetime import datetime, timezone
 from boto3.dynamodb.conditions import Attr
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-clients = table.scan()["Items"]
+clients = dynamodb.Table(os.environ.get("ROUTING_TABLE")).scan()["Items"]
 
 
 def serialize_float(obj):
@@ -62,22 +61,19 @@ def validate(function):
             response["body"] = json.dumps({"message": "invalid credentials"})
             return response
 
-        return function(*args, route_key, response)
+        return function(*args, route_key, response, clients)
     return lambda_request
 
 
 @validate
-def handler(event, context, route_key, response):
+def handler(event, context, route_key, response, clients):
     try:
         match route_key:
 
             case "GET /merchant/routing-table":
-                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-                clients = routing_table.scan()
-
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
-                    {"clients": clients["Items"]}, default=serialize_float)
+                    {"clients": clients}, default=serialize_float)
 
             case "POST /merchant/routing-table":
                 routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
@@ -97,12 +93,14 @@ def handler(event, context, route_key, response):
                     {"message": "item successfully deleted"})
 
             case "GET /merchant/purchase-orders":
-                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
-                purchase_orders = po_table.scan()
-
                 sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "modified"
                 order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
+                client_id = event["queryStringParameters"]["client_id"] if "client_id" in event["queryStringParameters"] else ""
                 desc = order_by == "desc"
+
+                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                purchase_orders = po_table.scan(
+                    FilterExpression=Attr("client_id").contains(client_id))
 
                 if sort_by == "line_count":
                     purchase_orders["Items"].sort(

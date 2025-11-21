@@ -103,10 +103,10 @@ export const PurchaseOrder = () => {
 
   return (
     <div>
-      <div class="has-text-centered mb-4">
-        <h1 class="title">purchase-order: {purchase_order}</h1>
+      <div className="has-text-centered mb-4">
+        <h1 className="title">purchase-order: {purchase_order}</h1>
         <h2
-          class="subtitle"
+          className="subtitle"
           style={{ visibility: UIState.loading ? "visible" : "hidden" }}
         >
           Fetching from server...
@@ -115,30 +115,34 @@ export const PurchaseOrder = () => {
 
       {purchaseOrder !== null && purchaseOrder.hasOwnProperty("client_id") && (
         <>
-          <div class="has-text-centered mb-4">
-            <h2 class="subtitle mb-1">client: {purchaseOrder.client_id}</h2>
-            <h2 class="subtitle mb-1">
+          <div className="has-text-centered mb-4">
+            <h2 className="subtitle mb-1">client: {purchaseOrder.client_id}</h2>
+            <h2 className="subtitle mb-1">
               order total:{" "}
               {purchaseOrder.data
                 .reduce((prev, next) => prev + next.line_total, 0)
                 .toFixed(2)}
             </h2>
-            <h2 class="subtitle mb-1">status: {purchaseOrder.status}</h2>
-            <h2 class="subtitle mb-1">modified: {purchaseOrder.modified}</h2>
+            <h2 className="subtitle mb-1">status: {purchaseOrder.status}</h2>
+            <h2 className="subtitle mb-1">
+              modified: {purchaseOrder.modified}
+            </h2>
           </div>
           <div>
             <hr />
-            <div class="has-text-centered mt-2 mb-4">
-              <h2 class="title">order lines</h2>
+            <div className="has-text-centered mt-2 mb-4">
+              <h2 className="title">order lines</h2>
             </div>
             <form onSubmit={sendConfirmation}>
               <fieldset
                 id="form-fieldset"
                 disabled={
-                  UIState.loading || purchaseOrder.status === "confirmed"
+                  UIState.loading ||
+                  purchaseOrder.status === "confirmed" ||
+                  purchaseOrder.status === "pending-buyer"
                 }
               >
-                <table class="table">
+                <table className="table">
                   <thead>
                     <tr>
                       {headers.map((header) => (
@@ -152,7 +156,7 @@ export const PurchaseOrder = () => {
                         <tr key={poLine.line}>
                           <td className="td-input">
                             <input
-                              class="input"
+                              className="input"
                               type="text"
                               name={`line_${poLine.line}`}
                               value={poLine.line}
@@ -163,7 +167,7 @@ export const PurchaseOrder = () => {
                           <td>{poLine.artist}</td>
                           <td className="td-input">
                             <input
-                              class="input"
+                              className="input"
                               type="text"
                               name={`album_${poLine.line}`}
                               value={poLine.album_id}
@@ -178,7 +182,7 @@ export const PurchaseOrder = () => {
                               style={{
                                 color: "red",
                               }}
-                              class="input"
+                              className="input"
                               type="text"
                               name={`confirmed_${poLine.line}`}
                               placeholder={poLine.quantity}
@@ -198,9 +202,9 @@ export const PurchaseOrder = () => {
                     })}
                   </tbody>
                 </table>
-                <div class="field has-text-centered">
-                  <p class="control">
-                    <button class="button is-success">
+                <div className="field has-text-centered">
+                  <p className="control">
+                    <button className="button is-success">
                       submit confirmation
                     </button>
                   </p>

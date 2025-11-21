@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
 
 export const RoutingTable = () => {
   const [clients, setClients] = useState(null);
-  const [queryParams, setQueryParams] = useSearchParams();
   const [UIState, setUIState] = useState({ loading: false, message: null });
 
-  const headers = ["client_id", "callback", "hmac", "action"];
+  const headers = ["client_id", "callback", "hmac", "address", "action"];
 
   useEffect(() => {
     fetchClients("fetching from server...");
@@ -42,6 +40,7 @@ export const RoutingTable = () => {
         client_id: { value: client_id },
         callback: { value: callback },
         hmac: { value: hmac },
+        address: { value: address },
       },
     } = event;
 
@@ -54,6 +53,7 @@ export const RoutingTable = () => {
           client_id: client_id,
           callback: callback,
           hmac: hmac,
+          address: address,
         }),
         headers: {
           "Content-Type": "text/plain",
@@ -96,17 +96,17 @@ export const RoutingTable = () => {
 
   return (
     <div>
-      <div class="has-text-centered mb-4">
-        <h1 class="title">Client Management</h1>
-        <h2 class="subtitle"></h2>
+      <div className="has-text-centered mb-4">
+        <h1 className="title">Client Management</h1>
+        <h2 className="subtitle"></h2>
       </div>
-      <div class="sign-in">
+      <div className="sign-in">
         <form onSubmit={sendClientData}>
           <fieldset id="form-fieldset">
-            <div class="field">
-              <p class="control">
+            <div className="field">
+              <p className="control">
                 <input
-                  class="input"
+                  className="input"
                   type="text"
                   name="client_id"
                   placeholder="unique client identifier"
@@ -114,10 +114,10 @@ export const RoutingTable = () => {
                 ></input>
               </p>
             </div>
-            <div class="field">
-              <p class="control">
+            <div className="field">
+              <p className="control">
                 <input
-                  class="input"
+                  className="input"
                   type="text"
                   placeholder="callback recipient url"
                   name="callback"
@@ -125,10 +125,10 @@ export const RoutingTable = () => {
                 ></input>
               </p>
             </div>
-            <div class="field">
-              <p class="control">
+            <div className="field">
+              <p className="control">
                 <input
-                  class="input"
+                  className="input"
                   type="text"
                   placeholder="HMAC key"
                   name="hmac"
@@ -136,19 +136,30 @@ export const RoutingTable = () => {
                 ></input>
               </p>
             </div>
-            <div class="field">
-              <p class="control">
-                <button class="button is-success">Submit</button>
+            <div className="field">
+              <p className="control">
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Siltakylänkuja 3, Helsinki, Finland"
+                  name="address"
+                  required
+                ></input>
+              </p>
+            </div>
+            <div className="field">
+              <p className="control">
+                <button className="button is-success">Submit</button>
               </p>
             </div>
           </fieldset>
         </form>
       </div>
       <hr />
-      <div class="has-text-centered mt-2 mb-4">
-        <h2 class="title">existing clients</h2>
+      <div className="has-text-centered mt-2 mb-4">
+        <h2 className="title">existing clients</h2>
         <h3
-          class="subtitle"
+          className="subtitle"
           style={{ visibility: UIState.loading ? "visible" : "hidden" }}
         >
           {UIState.message}
@@ -156,7 +167,7 @@ export const RoutingTable = () => {
       </div>
       <div className={UIState.loading ? "loading" : ""} id="loading-message">
         {clients !== null && clients.length > 0 && (
-          <table class="table">
+          <table className="table">
             <thead>
               <tr>
                 {headers.map((header) => (
@@ -168,11 +179,12 @@ export const RoutingTable = () => {
             </thead>
             <tbody>
               {clients.map((client) => {
-                const { client_id, callback, hmac } = client;
+                const { client_id, callback, address, hmac } = client;
                 return (
                   <tr key={client_id}>
                     <td>{client_id}</td>
                     <td>{callback}</td>
+                    <td>{address}</td>
                     <td>{hmac}</td>
                     <td>
                       <button
