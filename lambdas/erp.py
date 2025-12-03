@@ -3,11 +3,14 @@ import hmac
 import json
 import boto3
 import hashlib
+import datetime
 import requests
 import traceback
-from decimal import Decimal, Context
+
 from functools import wraps
-from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+from decimal import Decimal, Context
+from datetime import datetime, timezone, timedelta, date
 from boto3.dynamodb.conditions import Attr
 
 dynamodb = boto3.resource('dynamodb')
@@ -77,11 +80,9 @@ def handler(event, context, route_key, response, clients):
 
             case "POST /merchant/routing-table":
                 payload = json.loads(event["body"])
-                lookup_headers = {"Authorization": "%s" %
-                                  os.environ.get("TOKEN_KEY")}
 
                 address_lookup = requests.get(
-                    "https://api.radar.io/v1/geocode/forward?query=%s" % payload["address"], headers=lookup_headers)
+                    "https://api.radar.io/v1/geocode/forward?query=%s" % payload["address"], headers={"Authorization": os.environ.get("TOKEN_KEY")})
 
                 if address_lookup.status_code != 200:
                     raise Exception("address is not valid")
@@ -151,6 +152,38 @@ def handler(event, context, route_key, response, clients):
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
                     {"purchase_order": purchase_order["Item"]}, default=serialize_float)
+
+            case "GET /client/dispatch-cost":
+                check_hmac(str(event["queryStringParameters"]), event["headers"]
+                           ["Authorization"], event["queryStringParameters"]["client_id"])
+                client = search(clients, "client_id",
+                                event["queryStringParameters"]["client_id"])
+                lat, long = client["coords"]["latitude"], client["coords"]["longitude"]
+
+                distance_lookup = requests.get("https://api.radar.io/v1/route/distance?origin=%s&destination=%s,%s&modes=car&units=metric" % (
+                    os.environ.get("STORE_COORDS"), lat, long), headers={"Authorization": os.environ.get("TOKEN_KEY")})
+
+                freight = distance_lookup.json()["routes"]["car"]
+                kilometers, minutes = int(
+                    freight["distance"]["value"] / 1000), int(round(freight["duration"]["value"]))
+                weight_grams = 100 * \
+                    int(event["queryStringParameters"]["items"])
+                volume = (14.2 * 12.5 * 1.0) / 5000 * \
+                    float(event["queryStringParameters"]["items"])
+                cost = round(kilometers * volume * 1.25, 2)
+
+                today = date.today()
+                current_slot = datetime(year=today.year, month=today.month, day=today.day,
+                                        hour=12, minute=0, tzinfo=ZoneInfo("Europe/Helsinki"))
+                n_days = 7 if current_slot.weekday() >= 2 else 2
+
+                dispatch_slot = current_slot + \
+                    timedelta(days=n_days - current_slot.weekday())
+                estimated_delivery = dispatch_slot + timedelta(minutes=minutes)
+
+                response["statusCode"] = 200
+                response["body"] = json.dumps({"freight_cost": cost, "estimated_delivery": estimated_delivery.strftime(
+                    "%Y-%m-%d %H:%M"), "weight_grams": weight_grams})
 
             case "PUT /client/purchase-orders":
                 payload = json.loads(event["body"], parse_float=Decimal)
