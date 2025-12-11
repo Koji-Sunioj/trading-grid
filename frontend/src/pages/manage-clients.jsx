@@ -4,7 +4,7 @@ export const RoutingTable = () => {
   const [clients, setClients] = useState(null);
   const [UIState, setUIState] = useState({ loading: false, message: null });
 
-  const headers = ["client_id", "callback", "hmac", "address", "action"];
+  const headers = ["client_id", "callback", "address", "hmac", "action"];
 
   useEffect(() => {
     fetchClients("fetching from server...");
