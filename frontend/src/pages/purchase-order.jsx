@@ -31,6 +31,7 @@ export const PurchaseOrder = () => {
         credentials: "include",
       }
     );
+
     const { status } = response;
     if (status !== 200) {
       setPurchaseOrder({});
@@ -126,6 +127,12 @@ export const PurchaseOrder = () => {
             <h2 className="subtitle mb-1">status: {purchaseOrder.status}</h2>
             <h2 className="subtitle mb-1">
               modified: {purchaseOrder.modified}
+            </h2>
+            <h2 className="subtitle mb-1">
+              dispatch cost: {purchaseOrder.dispatch_cost}
+            </h2>
+            <h2 className="subtitle mb-1">
+              estimated delivery: {purchaseOrder.estimated_delivery}
             </h2>
           </div>
           <div>

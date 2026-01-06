@@ -36,6 +36,33 @@ def search(dicts, key, value):
         return None
 
 
+def get_dispatch(items, client):
+    lat, long = client["coords"]["latitude"], client["coords"]["longitude"]
+
+    distance_lookup = requests.get("https://api.radar.io/v1/route/distance?origin=%s&destination=%s,%s&modes=car&units=metric" % (
+        os.environ.get("STORE_COORDS"), lat, long), headers={"Authorization": os.environ.get("TOKEN_KEY")})
+
+    freight = distance_lookup.json()["routes"]["car"]
+    kilometers, minutes = int(
+        freight["distance"]["value"] / 1000), int(round(freight["duration"]["value"]))
+    weight_grams = 100 * \
+        int(items)
+    volume = (14.2 * 12.5 * 1.0) / 5000 * \
+        float(items)
+    cost = round(kilometers * volume * 1.25, 2)
+
+    today = date.today()
+    current_slot = datetime(year=today.year, month=today.month, day=today.day,
+                            hour=12, minute=0, tzinfo=ZoneInfo("Europe/Helsinki"))
+    n_days = 7 if current_slot.weekday() >= 2 else 2
+
+    dispatch_slot = current_slot + \
+        timedelta(days=n_days - current_slot.weekday())
+    estimated_delivery = dispatch_slot + timedelta(minutes=minutes)
+
+    return {"freight_cost": cost, "estimated_delivery": estimated_delivery.strftime("%Y-%m-%d %H:%M"), "weight_grams": weight_grams}
+
+
 def validate(function):
     @wraps(function)
     def lambda_request(*args):
@@ -158,45 +185,28 @@ def handler(event, context, route_key, response, clients):
                            ["Authorization"], event["queryStringParameters"]["client_id"])
                 client = search(clients, "client_id",
                                 event["queryStringParameters"]["client_id"])
-                lat, long = client["coords"]["latitude"], client["coords"]["longitude"]
 
-                distance_lookup = requests.get("https://api.radar.io/v1/route/distance?origin=%s&destination=%s,%s&modes=car&units=metric" % (
-                    os.environ.get("STORE_COORDS"), lat, long), headers={"Authorization": os.environ.get("TOKEN_KEY")})
-
-                freight = distance_lookup.json()["routes"]["car"]
-                kilometers, minutes = int(
-                    freight["distance"]["value"] / 1000), int(round(freight["duration"]["value"]))
-                weight_grams = 100 * \
-                    int(event["queryStringParameters"]["items"])
-                volume = (14.2 * 12.5 * 1.0) / 5000 * \
-                    float(event["queryStringParameters"]["items"])
-                cost = round(kilometers * volume * 1.25, 2)
-
-                today = date.today()
-                current_slot = datetime(year=today.year, month=today.month, day=today.day,
-                                        hour=12, minute=0, tzinfo=ZoneInfo("Europe/Helsinki"))
-                n_days = 7 if current_slot.weekday() >= 2 else 2
-
-                dispatch_slot = current_slot + \
-                    timedelta(days=n_days - current_slot.weekday())
-                estimated_delivery = dispatch_slot + timedelta(minutes=minutes)
+                freight = get_dispatch(
+                    event["queryStringParameters"]["items"], client)
 
                 response["statusCode"] = 200
-                response["body"] = json.dumps({"freight_cost": cost, "estimated_delivery": estimated_delivery.strftime(
-                    "%Y-%m-%d %H:%M"), "weight_grams": weight_grams})
+                response["body"] = json.dumps(freight)
 
             case "PUT /client/purchase-orders":
                 payload = json.loads(event["body"], parse_float=Decimal)
                 check_hmac(event["body"], event["headers"]
                            ["Authorization"], payload["client_id"])
+                client = search(clients, "client_id",
+                                payload["client_id"])
+                items = 0
 
-                # distance_lookup = requests.get(
-                #    "https://api.radar.io/v1/route/distance?origin=%s&destination=%s,%s&modes=car&units=metric" % (os.environ.get("STORE_COORDS"),lat, long), headers=lookup_headers)
-                #
-                # if distance_lookup.status_code != 200:
-                #    raise Exception("distance between store and client could not be determined accurately")
-                #
-                # kilometers = round(distance_lookup.json()["routes"]["geodesic"]["distance"]["value"] / 1000)
+                for line in payload["data"]:
+                    items += line["quantity"]
+
+                freight = get_dispatch(items, client)
+
+                if freight["estimated_delivery"] != payload["estimated_delivery"] or round(freight["freight_cost"], 2) != round(float(payload["dispatch_cost"]), 2):
+                    raise Exception("cost provided by customer not matching")
 
                 po_key = {
                     "purchase_order_id": payload["purchase_order_id"], "client_id": payload["client_id"]}
