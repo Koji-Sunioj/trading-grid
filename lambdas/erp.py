@@ -1,5 +1,7 @@
 import os
 import hmac
+import uuid
+import math
 import json
 import boto3
 import hashlib
@@ -58,7 +60,8 @@ def get_dispatch(items, client):
 
     dispatch_slot = current_slot + \
         timedelta(days=n_days - current_slot.weekday())
-    estimated_delivery = dispatch_slot + timedelta(minutes=minutes)
+    estimated_delivery = dispatch_slot + \
+        timedelta(minutes=math.ceil(minutes / 10) * 10)
 
     return {"freight_cost": cost, "estimated_delivery": estimated_delivery.strftime("%Y-%m-%d %H:%M"), "weight_grams": weight_grams}
 
@@ -307,14 +310,33 @@ def handler(event, context, route_key, response, clients):
                     routing["Item"]["callback"]+"/api/purchase-orders/merchant-response", data=return_payload, headers=headers)
 
                 if client_response.status_code != 200:
-                    response["statusCode"] = 400
-                    response["body"] = json.dumps(
-                        {"message": "error on client's server"})
-                else:
-                    response["statusCode"] = 200
-                    message = "purchase order %s received at client with order status %s" % (
-                        purchase_order_id, status)
-                    response["body"] = json.dumps({"message": message})
+                    raise Exception(
+                        "there was an error returning an order response to the client")
+
+                dispatch_uuid = str(uuid.uuid4())
+                dispatch_table = dynamodb.Table(
+                    os.environ.get("DISPATCH_TABLE"))
+                dispatch_item = {"dispatch_id": dispatch_uuid, "purchase_order": purchase_order_id,
+                                 "status": "pending-supplier", "address": routing["Item"]["address"]}
+                dispatch_table.put_item(Item=dispatch_item)
+                dispatch_payload = json.dumps(dispatch_item)
+
+                hmac_hex = hmac.digest(routing["Item"]["hmac"].encode(), str(
+                    dispatch_payload).encode(), digest=hashlib.sha256).hex()
+                headers = {"Authorization": hmac_hex}
+
+                dispatch_request = requests.post(
+                    routing["Item"]["callback"] + "/api/shipment-orders/merchant-response", data=dispatch_payload, headers=headers)
+
+                if dispatch_request.status_code != 200:
+                    raise Exception(
+                        "there was an error returning a dispatch order to the client")
+
+                message = "purchase order %s received at client with order status %s" % (
+                    purchase_order_id, status)
+                response["statusCode"] = 200
+                response["body"] = json.dumps({"message": message})
+
             case _:
                 raise Exception("no matching resource")
 
