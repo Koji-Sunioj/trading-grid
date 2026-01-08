@@ -14,6 +14,7 @@ export const ERP = () => {
     "client_id",
     "purchase_order_id",
     "status",
+    "estimated_delivery",
     "line_count",
   ];
 
@@ -56,6 +57,12 @@ export const ERP = () => {
     setQueryParams({ sort: header, order: newSortBy });
   };
 
+  const checkDeliveryDate = (date) => {
+    const today = new Date();
+    const deliveryDate = new Date(date);
+    return deliveryDate < today ? { color: "red" } : null;
+  };
+
   return (
     <div>
       <div className="has-text-centered mb-4">
@@ -91,8 +98,14 @@ export const ERP = () => {
             </thead>
             <tbody>
               {purchaseOrders.map((order) => {
-                const { modified, client_id, data, purchase_order_id, status } =
-                  order;
+                const {
+                  modified,
+                  client_id,
+                  data,
+                  purchase_order_id,
+                  status,
+                  estimated_delivery,
+                } = order;
                 return (
                   <tr key={purchase_order_id}>
                     <td>{modified}</td>
@@ -109,6 +122,9 @@ export const ERP = () => {
                       </Link>
                     </td>
                     <td>{status}</td>
+                    <td style={checkDeliveryDate(estimated_delivery)}>
+                      {estimated_delivery}
+                    </td>
                     <td>{data.length}</td>
                   </tr>
                 );
