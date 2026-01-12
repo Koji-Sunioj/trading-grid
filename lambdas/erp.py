@@ -418,7 +418,7 @@ def handler(event, context, route_key, response, clients):
 
                     po_table.put_item(Item=purchase_order["Item"])
 
-                dispatch_item["status"] = payload["status"]
+                dispatch_item["Item"]["status"] = payload["status"] = payload["status"]
                 dispatch_table.put_item(Item=dispatch_item["Item"])
 
                 response["statusCode"] = 200
