@@ -1,29 +1,27 @@
+import { determineHeaders } from "../utils/utils";
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router";
 
 export const ERP = () => {
   const { module, client_id } = useParams();
   const [queryParams, setQueryParams] = useSearchParams();
+
+  const [dispatches, setDispatches] = useState(null);
   const [purchaseOrders, setPurchaseOrders] = useState(null);
   const [UIState, setUIState] = useState({ loading: false });
 
   const sortBy = queryParams.get("sort");
   const orderBy = queryParams.get("order");
-  const headers = [
-    "modified",
-    "client_id",
-    "purchase_order_id",
-    "status",
-    "estimated_delivery",
-    "line_count",
-  ];
+  const headers = determineHeaders(module);
 
   const invalidParams =
     !headers.includes(sortBy) || !["asc", "desc"].includes(orderBy);
 
   useEffect(() => {
-    if (invalidParams) {
+    if (invalidParams && module === "purchase-orders") {
       setQueryParams({ sort: "modified", order: "desc" });
+    } else if (invalidParams && module === "dispatches") {
+      setQueryParams({ sort: "estimated_delivery", order: "desc" });
     } else {
       fetchOrders();
     }
@@ -43,11 +41,23 @@ export const ERP = () => {
     });
     const { status } = response;
 
-    if (status !== 200) {
-      setPurchaseOrders([]);
-    } else {
-      const { orders } = await response.json();
-      setPurchaseOrders(orders);
+    switch (module) {
+      case "purchase-orders":
+        if (status !== 200) {
+          setPurchaseOrders([]);
+        } else {
+          const { orders } = await response.json();
+          setPurchaseOrders(orders);
+        }
+        break;
+      case "dispatches":
+        if (status !== 200) {
+          setPurchaseOrders([]);
+        } else {
+          const { dispatches } = await response.json();
+          setDispatches(dispatches);
+        }
+        break;
     }
     setUIState({ loading: false });
   };
@@ -57,11 +67,15 @@ export const ERP = () => {
     setQueryParams({ sort: header, order: newSortBy });
   };
 
-  const checkDeliveryDate = (date) => {
-    const today = new Date();
-    const deliveryDate = new Date(date);
-    return deliveryDate < today ? { color: "red" } : null;
-  };
+  const renderPOS =
+    purchaseOrders !== null &&
+    purchaseOrders.length > 0 &&
+    module === "purchase-orders";
+
+  const renderDispatches =
+    dispatches !== null && dispatches.length > 0 && module === "dispatches";
+
+  const renderHeader = renderDispatches || renderPOS;
 
   return (
     <div>
@@ -75,8 +89,8 @@ export const ERP = () => {
         </h2>
       </div>
       <div>
-        {purchaseOrders !== null && purchaseOrders.length > 0 && (
-          <table className="table">
+        <table className="table">
+          {renderHeader && (
             <thead>
               <tr>
                 {headers.map((header) => (
@@ -96,6 +110,46 @@ export const ERP = () => {
                 ))}
               </tr>
             </thead>
+          )}
+          {renderDispatches && (
+            <tbody>
+              {dispatches.map((dispatch) => {
+                const {
+                  dispatch_id,
+                  purchase_order,
+                  client_id,
+                  estimated_delivery,
+                  status,
+                  address,
+                } = dispatch;
+                return (
+                  <tr key={dispatch_id}>
+                    <td>
+                      {!status.includes(["shipped", "received"]) ? (
+                        <Link to={`/erp/dispatches/${dispatch_id}`}>
+                          {dispatch_id}
+                        </Link>
+                      ) : (
+                        { dispatch_id }
+                      )}
+                    </td>
+                    <td>
+                      <Link
+                        to={`/erp/purchase-orders/${client_id}/${purchase_order}`}
+                      >
+                        {purchase_order}
+                      </Link>
+                    </td>
+                    <td>{client_id}</td>
+                    <td>{estimated_delivery}</td>
+                    <td>{status}</td>
+                    <td>{address}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          )}
+          {renderPOS && (
             <tbody>
               {purchaseOrders.map((order) => {
                 const {
@@ -122,16 +176,14 @@ export const ERP = () => {
                       </Link>
                     </td>
                     <td>{status}</td>
-                    <td style={checkDeliveryDate(estimated_delivery)}>
-                      {estimated_delivery}
-                    </td>
+                    <td>{estimated_delivery}</td>
                     <td>{data.length}</td>
                   </tr>
                 );
               })}
             </tbody>
-          </table>
-        )}
+          )}
+        </table>
       </div>
     </div>
   );

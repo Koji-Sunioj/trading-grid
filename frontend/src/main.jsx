@@ -7,6 +7,7 @@ import { ERP } from "./pages/erp-module";
 import { Unathorized } from "./pages/403";
 import { LandingPage } from "./pages/landing-page";
 import { RoutingTable } from "./pages/manage-clients";
+import { DispatchRequest } from "./pages/dispatch-request";
 import { PurchaseOrder } from "./pages/purchase-order";
 
 import ReactDOM from "react-dom/client";
@@ -55,6 +56,10 @@ const App = () => {
               <Route
                 path="/erp/purchase-orders/:client_id/:purchase_order"
                 element={<PurchaseOrder />}
+              />
+              <Route
+                path="/erp/dispatches/:dispatch_id/"
+                element={<DispatchRequest />}
               />
             </>
           )}

@@ -183,18 +183,6 @@ def handler(event, context, route_key, response, clients):
                 response["body"] = json.dumps(
                     {"purchase_order": purchase_order["Item"]}, default=serialize_float)
 
-            case "GET /client/dispatch-cost":
-                check_hmac(str(event["queryStringParameters"]), event["headers"]
-                           ["Authorization"], event["queryStringParameters"]["client_id"])
-                client = search(clients, "client_id",
-                                event["queryStringParameters"]["client_id"])
-
-                freight = get_dispatch(
-                    event["queryStringParameters"]["items"], client)
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps(freight)
-
             case "PUT /client/purchase-orders":
                 payload = json.loads(event["body"], parse_float=Decimal)
                 check_hmac(event["body"], event["headers"]
@@ -317,7 +305,7 @@ def handler(event, context, route_key, response, clients):
                 dispatch_table = dynamodb.Table(
                     os.environ.get("DISPATCH_TABLE"))
                 dispatch_item = {"dispatch_id": dispatch_uuid, "purchase_order": purchase_order_id,
-                                 "status": "pending-supplier", "address": routing["Item"]["address"]}
+                                 "status": "pending-supplier", "address": routing["Item"]["address"], "client_id": client_id, "estimated_delivery": purchase_order["Item"]["estimated_delivery"]}
                 dispatch_table.put_item(Item=dispatch_item)
                 dispatch_payload = json.dumps(dispatch_item)
 
@@ -336,6 +324,106 @@ def handler(event, context, route_key, response, clients):
                     purchase_order_id, status)
                 response["statusCode"] = 200
                 response["body"] = json.dumps({"message": message})
+
+            case "GET /client/dispatch-cost":
+                check_hmac(str(event["queryStringParameters"]), event["headers"]
+                           ["Authorization"], event["queryStringParameters"]["client_id"])
+                client = search(clients, "client_id",
+                                event["queryStringParameters"]["client_id"])
+
+                freight = get_dispatch(
+                    event["queryStringParameters"]["items"], client)
+
+                response["statusCode"] = 200
+                response["body"] = json.dumps(freight)
+
+            case "GET /merchant/dispatches":
+                sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "estimated_delivery"
+                order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
+                client_id = event["queryStringParameters"]["client_id"] if "client_id" in event["queryStringParameters"] else ""
+                desc = order_by == "desc"
+
+                dispatch_table = dynamodb.Table(
+                    os.environ.get("DISPATCH_TABLE"))
+                dispatches = dispatch_table.scan(
+                    FilterExpression=Attr("client_id").contains(client_id))
+                dispatches["Items"].sort(
+                    key=lambda x: x[sort_by], reverse=desc)
+
+                response["statusCode"] = 200
+                response["body"] = json.dumps(
+                    {"dispatches": dispatches["Items"]}, default=serialize_float)
+
+            case "GET /merchant/dispatches/{dispatch_id}":
+                dispatch_table = dynamodb.Table(
+                    os.environ.get("DISPATCH_TABLE"))
+                dispatch_id = event["pathParameters"]["dispatch_id"]
+                dispatch_item = dispatch_table.get_item(
+                    Key={"dispatch_id": dispatch_id})
+
+                current_delivery_date = datetime.strptime(
+                    dispatch_item["Item"]["estimated_delivery"], "%Y-%m-%d %H:%M")
+                now = datetime.now()
+                dispatch_object = {"dispatch": dispatch_item["Item"]}
+
+                if now > current_delivery_date:
+                    po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                    purchase_order = po_table.get_item(
+                        Key={"client_id": dispatch_item["Item"]["client_id"], "purchase_order_id": dispatch_item["Item"]["purchase_order"]})
+                    items = sum([line["quantity"]
+                                for line in purchase_order["Item"]["data"]])
+                    client = search(clients, "client_id",
+                                    dispatch_item["Item"]["client_id"])
+                    new_delivery_date = get_dispatch(items, client)[
+                        "estimated_delivery"]
+                    dispatch_object["dispatch"]["new_delivery_date"] = new_delivery_date
+
+                response["statusCode"] = 200
+                response["body"] = json.dumps(
+                    dispatch_object, default=serialize_float)
+
+            case "POST /merchant/dispatches/{dispatch_id}":
+                dispatch_id = event["pathParameters"]["dispatch_id"]
+                payload = json.loads(event["body"])
+
+                client = search(clients, "client_id", payload["client_id"])
+
+                return_payload = json.dumps(
+                    {"status": payload["status"], "estimated_delivery": payload["estimated_delivery"]})
+                hmac_hex = hmac.digest(client["hmac"].encode(), str(
+                    return_payload).encode(), digest=hashlib.sha256).hex()
+                headers = {"Authorization": hmac_hex}
+
+                dispatch_update = requests.patch(
+                    client["callback"]+"/api/shipment-orders/merchant-response/%s" % dispatch_id, headers=headers, data=return_payload)
+
+                if dispatch_update.status_code != 200:
+                    raise Exception(
+                        "there was an error returning a dispatch order to the client")
+
+                dispatch_table = dynamodb.Table(
+                    os.environ.get("DISPATCH_TABLE"))
+                dispatch_item = dispatch_table.get_item(
+                    Key={"dispatch_id": dispatch_id})
+
+                if dispatch_item["Item"]["estimated_delivery"] != payload["estimated_delivery"]:
+                    dispatch_item["Item"]["estimated_delivery"] = payload["estimated_delivery"]
+
+                    po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
+                    purchase_order = po_table.get_item(
+                        Key={"client_id": payload["client_id"], "purchase_order_id": dispatch_item["Item"]["purchase_order"]})
+                    purchase_order["Item"]["estimated_delivery"] = payload["estimated_delivery"]
+                    purchase_order["Item"]["modified"] = datetime.now(
+                        timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+                    po_table.put_item(Item=purchase_order["Item"])
+
+                dispatch_item["status"] = payload["status"]
+                dispatch_table.put_item(Item=dispatch_item["Item"])
+
+                response["statusCode"] = 200
+                response["body"] = json.dumps(
+                    {"message": "dispatch %s updated at the clients server" % dispatch_id}, default=serialize_float)
 
             case _:
                 raise Exception("no matching resource")

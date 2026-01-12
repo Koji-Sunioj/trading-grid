@@ -24,7 +24,7 @@ export const LandingPage = () => {
             </Link>
           </li>
           <li>
-            <Link to={{ pathname: "/erp/shipments" }}>Shipment Orders</Link>
+            <Link to={{ pathname: "/erp/dispatches" }}>Shipment Orders</Link>
           </li>
         </ul>
       </div>
