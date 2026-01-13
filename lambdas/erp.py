@@ -337,6 +337,23 @@ def handler(event, context, route_key, response, clients):
                 response["statusCode"] = 200
                 response["body"] = json.dumps(freight)
 
+            case "PATCH /client/dispatches/{dispatch_id}":
+                payload = json.loads(event["body"])
+                dispatch_id = event["pathParameters"]["dispatch_id"]
+                check_hmac(event["body"], event["headers"]["Authorization"], payload["client_id"])
+
+                dispatch_table = dynamodb.Table(os.environ.get("DISPATCH_TABLE"))
+                dispatch_item = dispatch_table.get_item(Key={"dispatch_id": dispatch_id})
+
+                if dispatch_item["Item"]["status"] != "shipped":
+                    raise Exception("dispatch item %s must be in shipped status to update" % dispatch_id)
+
+                dispatch_item["Item"]["status"] = payload["status"]
+                dispatch_table.put_item(Item=dispatch_item["Item"])
+                
+                response["statusCode"] = 200
+                response["body"] = json.dumps({"message":"dispatch item %s updated successfully" % dispatch_id})
+
             case "GET /merchant/dispatches":
                 sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "estimated_delivery"
                 order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
