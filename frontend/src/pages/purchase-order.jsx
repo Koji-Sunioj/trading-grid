@@ -105,7 +105,6 @@ export const PurchaseOrder = () => {
   return (
     <div>
       <div className="has-text-centered mb-2">
-        <h1 className="title">purchase-order: {purchase_order}</h1>
         <h2
           className="subtitle"
           style={{ visibility: UIState.loading ? "visible" : "hidden" }}

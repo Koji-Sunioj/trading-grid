@@ -11,8 +11,8 @@ import { DispatchRequest } from "./pages/dispatch-request";
 import { PurchaseOrder } from "./pages/purchase-order";
 
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router";
 import { React, createContext, useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route } from "react-router";
 
 export const UserContext = createContext(null);
 
@@ -44,7 +44,9 @@ const App = () => {
   return (
     <UserContext.Provider value={{ authorized, setAuthorized }}>
       <BrowserRouter>
-        <NavBar />
+        <div>
+          <NavBar authorized={authorized.state} />
+        </div>
         <Routes>
           <Route path="/" element={<SignIn />} />
           {authorized.state && (

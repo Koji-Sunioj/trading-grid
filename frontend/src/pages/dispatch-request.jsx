@@ -61,7 +61,7 @@ export const DispatchRequest = () => {
         }),
       }
     );
-    const { status } = response;
+
     const { message } = await response.json();
     alert(message);
     getDispatch(dispatch_id);
@@ -71,7 +71,6 @@ export const DispatchRequest = () => {
   return (
     <div>
       <div className="has-text-centered mb-2">
-        <h1 className="title">dispatch-id: {dispatch_id}</h1>
         <h2
           className="subtitle"
           style={{ visibility: UIState.loading ? "visible" : "hidden" }}
