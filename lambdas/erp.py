@@ -295,7 +295,7 @@ def handler(event, context, route_key, response, clients):
                 headers = {"Authorization": hmac_hex}
 
                 client_response = requests.post(
-                    routing["Item"]["callback"]+"/api/purchase-orders/merchant-response", data=return_payload, headers=headers)
+                    routing["Item"]["callback"]+"/api/merchant/purchase-orders", data=return_payload, headers=headers)
 
                 if client_response.status_code != 200:
                     raise Exception(
@@ -314,7 +314,7 @@ def handler(event, context, route_key, response, clients):
                 headers = {"Authorization": hmac_hex}
 
                 dispatch_request = requests.post(
-                    routing["Item"]["callback"] + "/api/shipment-orders/merchant-response", data=dispatch_payload, headers=headers)
+                    routing["Item"]["callback"] + "/api/merchant/shipment-orders", data=dispatch_payload, headers=headers)
 
                 if dispatch_request.status_code != 200:
                     raise Exception(
@@ -417,7 +417,7 @@ def handler(event, context, route_key, response, clients):
                 headers = {"Authorization": hmac_hex}
 
                 dispatch_update = requests.patch(
-                    client["callback"]+"/api/shipment-orders/merchant-response/%s" % dispatch_id, headers=headers, data=return_payload)
+                    client["callback"]+"/api/merchant/shipment-orders/%s" % dispatch_id, headers=headers, data=return_payload)
 
                 if dispatch_update.status_code != 200:
                     raise Exception(
