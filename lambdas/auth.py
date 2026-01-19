@@ -1,10 +1,7 @@
 import os
 import json
 import boto3
-import base64
 import traceback
-from jose import jwt
-from datetime import timedelta, datetime, timezone
 
 response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
