@@ -20,7 +20,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
           AUTH_LAMBDA: ${{ secrets.AUTH_LAMBDA }}
-          ERP_LAMBDA: ${{ secrets.ERP_LAMBDA }}
+          MERCHANT_ERP_LAMBDA: ${{ secrets.MERCHANT_ERP_LAMBDA }}
           CORS_LAMBDA: ${{ secrets.CORS_LAMBDA }}
           CLIENT_ERP_LAMBDA: ${{ secrets.CLIENT_ERP_LAMBDA }}
         run: |
