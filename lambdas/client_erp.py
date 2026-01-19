@@ -201,31 +201,6 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps(
                     {"message": "dispatch item %s updated successfully" % dispatch_id})
 
-            case "GET /merchant/dispatches/{dispatch_id}":
-                dispatch_id = event["pathParameters"]["dispatch_id"]
-                dispatch_item = dispatch_table.get_item(
-                    Key={"dispatch_id": dispatch_id})["Item"]
-
-                current_delivery_date = datetime.strptime(
-                    dispatch_item["estimated_delivery"], "%Y-%m-%d %H:%M")
-                now = datetime.now()
-                dispatch_object = {"dispatch": dispatch_item}
-
-                if now > current_delivery_date:
-                    purchase_order = po_table.get_item(
-                        Key={"client_id": dispatch_item["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})
-                    items = sum([line["quantity"]
-                                for line in purchase_order["data"]])
-                    client = search(clients, "client_id",
-                                    dispatch_item["client_id"])
-                    new_delivery_date = get_dispatch(items, client)[
-                        "estimated_delivery"]
-                    dispatch_object["dispatch"]["new_delivery_date"] = new_delivery_date
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    dispatch_object, default=serialize_float)
-
             case _:
                 raise Exception("no matching resource")
 

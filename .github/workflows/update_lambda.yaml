@@ -29,7 +29,7 @@ jobs:
           aws lambda update-function-code --region eu-north-1 \
           --function-name $AUTH_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
           aws lambda update-function-code --region eu-north-1 \
-          --function-name $ERP_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
+          --function-name $MERCHANT_ERP_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
           aws lambda update-function-code --region eu-north-1 \
           --function-name $CORS_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
           aws lambda update-function-code --region eu-north-1 \
