@@ -16,7 +16,6 @@ from datetime import datetime, timezone, timedelta, date
 from boto3.dynamodb.conditions import Attr
 
 dynamodb = boto3.resource('dynamodb')
-clients = dynamodb.Table(os.environ.get("ROUTING_TABLE")).scan()["Items"]
 
 
 def serialize_float(obj):
@@ -94,15 +93,22 @@ def validate(function):
             response["body"] = json.dumps({"message": "invalid credentials"})
             return response
 
-        return function(*args, route_key, response, clients)
+        return function(*args, route_key, response)
     return lambda_request
 
 
 @validate
-def handler(event, context, route_key, response, clients):
+def handler(event, context, route_key, response):
     try:
-        match route_key:
+        po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
+        routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+        dispatch_table = dynamodb.Table(os.environ.get("DISPATCH_TABLE"))
+        ammendments_table = dynamodb.Table(
+            os.environ.get("PO_AMMENDMENT_TABLE"))
 
+        clients = routing_table.scan()["Items"]
+
+        match route_key:
             case "GET /merchant/routing-table":
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
@@ -123,7 +129,6 @@ def handler(event, context, route_key, response, clients):
                 payload["coords"] = {"latitude": decimal_prec.create_decimal_from_float(
                     lat), "longitude": decimal_prec.create_decimal_from_float(long)}
 
-                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
                 routing_table.put_item(Item=payload)
 
                 response["statusCode"] = 200
@@ -131,7 +136,6 @@ def handler(event, context, route_key, response, clients):
                     {"message": "client created successfully"})
 
             case "DELETE /merchant/routing-table/{client_id}":
-                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
                 routing_table.delete_item(
                     Key={"client_id": event["pathParameters"]["client_id"]})
 
@@ -145,7 +149,6 @@ def handler(event, context, route_key, response, clients):
                 client_id = event["queryStringParameters"]["client_id"] if "client_id" in event["queryStringParameters"] else ""
                 desc = order_by == "desc"
 
-                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 purchase_orders = po_table.scan(
                     FilterExpression=Attr("client_id").contains(client_id))
 
@@ -161,13 +164,8 @@ def handler(event, context, route_key, response, clients):
                     {"orders": purchase_orders["Items"]}, default=serialize_float)
 
             case "GET /merchant/purchase-orders/{client_id}/{purchase_order_id}":
-
                 po_key = {"purchase_order_id":  int(
                     event["pathParameters"]["purchase_order_id"]), "client_id":  event["pathParameters"]["client_id"]}
-
-                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
-                ammendments_table = dynamodb.Table(
-                    os.environ.get("PO_AMMENDMENT_TABLE"))
 
                 purchase_order = po_table.get_item(Key=po_key)
                 purchase_order_lines = ammendments_table.get_item(Key=po_key)
@@ -202,7 +200,6 @@ def handler(event, context, route_key, response, clients):
                 po_key = {
                     "purchase_order_id": payload["purchase_order_id"], "client_id": payload["client_id"]}
 
-                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 current_po = po_table.get_item(Key=po_key)
 
                 if "Item" in current_po and current_po["Item"]["status"] != "pending-buyer":
@@ -218,8 +215,6 @@ def handler(event, context, route_key, response, clients):
                         raise Exception(
                             "a pending order already exists. please complete that first.")
 
-                ammendments_table = dynamodb.Table(
-                    os.environ.get("PO_AMMENDMENT_TABLE"))
                 purchase_order_lines = ammendments_table.get_item(Key=po_key)
                 keep_lines = None
 
@@ -258,7 +253,6 @@ def handler(event, context, route_key, response, clients):
                 purchase_order_id, client_id = int(
                     event["pathParameters"]["purchase_order_id"]), event["pathParameters"]["client_id"]
 
-                po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
                 purchase_order = po_table.get_item(
                     Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
 
@@ -266,8 +260,6 @@ def handler(event, context, route_key, response, clients):
                     raise Exception("this purchase order is completed")
 
                 body = json.loads(event["body"])
-                ammendments_table = dynamodb.Table(
-                    os.environ.get("PO_AMMENDMENT_TABLE"))
                 ammendments_table.put_item(Item=body)
 
                 confirmed_lines = []
@@ -286,35 +278,33 @@ def handler(event, context, route_key, response, clients):
                 body["modified"] = new_modified
                 po_table.put_item(Item=purchase_order["Item"])
 
-                routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-                routing = routing_table.get_item(Key={"client_id": client_id})
+                client = search(clients, "client_id", client_id)
 
                 return_payload = json.dumps(body)
-                hmac_hex = hmac.digest(routing["Item"]["hmac"].encode(), str(
+                hmac_hex = hmac.digest(client["hmac"].encode(), str(
                     return_payload).encode(), digest=hashlib.sha256).hex()
                 headers = {"Authorization": hmac_hex}
 
                 client_response = requests.post(
-                    routing["Item"]["callback"]+"/api/merchant/purchase-orders", data=return_payload, headers=headers)
+                    client["callback"]+"/api/merchant/purchase-orders", data=return_payload, headers=headers)
 
                 if client_response.status_code != 200:
                     raise Exception(
                         "there was an error returning an order response to the client")
 
                 dispatch_uuid = str(uuid.uuid4())
-                dispatch_table = dynamodb.Table(
-                    os.environ.get("DISPATCH_TABLE"))
+
                 dispatch_item = {"dispatch_id": dispatch_uuid, "purchase_order": purchase_order_id,
-                                 "status": "pending-supplier", "address": routing["Item"]["address"], "client_id": client_id, "estimated_delivery": purchase_order["Item"]["estimated_delivery"]}
+                                 "status": "pending-supplier", "address": client["address"], "client_id": client_id, "estimated_delivery": purchase_order["Item"]["estimated_delivery"]}
                 dispatch_table.put_item(Item=dispatch_item)
                 dispatch_payload = json.dumps(dispatch_item)
 
-                hmac_hex = hmac.digest(routing["Item"]["hmac"].encode(), str(
+                hmac_hex = hmac.digest(client["hmac"].encode(), str(
                     dispatch_payload).encode(), digest=hashlib.sha256).hex()
                 headers = {"Authorization": hmac_hex}
 
                 dispatch_request = requests.post(
-                    routing["Item"]["callback"] + "/api/merchant/shipment-orders", data=dispatch_payload, headers=headers)
+                    client["callback"] + "/api/merchant/shipment-orders", data=dispatch_payload, headers=headers)
 
                 if dispatch_request.status_code != 200:
                     raise Exception(
@@ -343,8 +333,6 @@ def handler(event, context, route_key, response, clients):
                 check_hmac(event["body"], event["headers"]
                            ["Authorization"], payload["client_id"])
 
-                dispatch_table = dynamodb.Table(
-                    os.environ.get("DISPATCH_TABLE"))
                 dispatch_item = dispatch_table.get_item(
                     Key={"dispatch_id": dispatch_id})["Item"]
 
@@ -365,8 +353,6 @@ def handler(event, context, route_key, response, clients):
                 client_id = event["queryStringParameters"]["client_id"] if "client_id" in event["queryStringParameters"] else ""
                 desc = order_by == "desc"
 
-                dispatch_table = dynamodb.Table(
-                    os.environ.get("DISPATCH_TABLE"))
                 dispatches = dispatch_table.scan(
                     FilterExpression=Attr("client_id").contains(client_id))
                 dispatches["Items"].sort(
@@ -377,8 +363,6 @@ def handler(event, context, route_key, response, clients):
                     {"dispatches": dispatches["Items"]}, default=serialize_float)
 
             case "GET /merchant/dispatches/{dispatch_id}":
-                dispatch_table = dynamodb.Table(
-                    os.environ.get("DISPATCH_TABLE"))
                 dispatch_id = event["pathParameters"]["dispatch_id"]
                 dispatch_item = dispatch_table.get_item(
                     Key={"dispatch_id": dispatch_id})
@@ -389,7 +373,6 @@ def handler(event, context, route_key, response, clients):
                 dispatch_object = {"dispatch": dispatch_item["Item"]}
 
                 if now > current_delivery_date:
-                    po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
                     purchase_order = po_table.get_item(
                         Key={"client_id": dispatch_item["Item"]["client_id"], "purchase_order_id": dispatch_item["Item"]["purchase_order"]})
                     items = sum([line["quantity"]
@@ -423,15 +406,12 @@ def handler(event, context, route_key, response, clients):
                     raise Exception(
                         "there was an error returning a dispatch order to the client")
 
-                dispatch_table = dynamodb.Table(
-                    os.environ.get("DISPATCH_TABLE"))
                 dispatch_item = dispatch_table.get_item(
                     Key={"dispatch_id": dispatch_id})
 
                 if dispatch_item["Item"]["estimated_delivery"] != payload["estimated_delivery"]:
                     dispatch_item["Item"]["estimated_delivery"] = payload["estimated_delivery"]
 
-                    po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
                     purchase_order = po_table.get_item(
                         Key={"client_id": payload["client_id"], "purchase_order_id": dispatch_item["Item"]["purchase_order"]})
                     purchase_order["Item"]["estimated_delivery"] = payload["estimated_delivery"]
