@@ -16,17 +16,21 @@ from datetime import datetime, timezone, timedelta, date
 from boto3.dynamodb.conditions import Attr
 
 dynamodb = boto3.resource('dynamodb')
+po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
+routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+dispatch_table = dynamodb.Table(os.environ.get("DISPATCH_TABLE"))
+ammendments_table = dynamodb.Table(
+    os.environ.get("PO_AMMENDMENT_TABLE"))
 
 
 def serialize_float(obj):
     return float(obj)
 
 
-def check_hmac(payload, client_hmac, client_id):
-    client = search(clients, "client_id", client_id)
-    correct_hmac = hmac.digest(client["hmac"].encode(
+def check_hmac(payload, request_hmac, hmac_key):
+    correct_hmac = hmac.digest(hmac_key.encode(
     ), payload.encode(), digest=hashlib.sha256).hex()
-    if not hmac.compare_digest(client_hmac, correct_hmac):
+    if not hmac.compare_digest(request_hmac, correct_hmac):
         raise Exception("invalid credentials")
 
 
@@ -69,6 +73,7 @@ def validate(function):
     @wraps(function)
     def lambda_request(*args):
         event = args[0]
+
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
         response = {}
         response['headers'] = {"Access-Control-Allow-Methods": "*"}
@@ -100,12 +105,6 @@ def validate(function):
 @validate
 def handler(event, context, route_key, response):
     try:
-        po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
-        routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-        dispatch_table = dynamodb.Table(os.environ.get("DISPATCH_TABLE"))
-        ammendments_table = dynamodb.Table(
-            os.environ.get("PO_AMMENDMENT_TABLE"))
-
         clients = routing_table.scan()["Items"]
 
         match route_key:
@@ -150,43 +149,43 @@ def handler(event, context, route_key, response):
                 desc = order_by == "desc"
 
                 purchase_orders = po_table.scan(
-                    FilterExpression=Attr("client_id").contains(client_id))
+                    FilterExpression=Attr("client_id").contains(client_id))["Items"]
 
                 if sort_by == "line_count":
-                    purchase_orders["Items"].sort(
+                    purchase_orders.sort(
                         key=lambda x: len(x["data"]), reverse=desc)
                 else:
-                    purchase_orders["Items"].sort(
+                    purchase_orders.sort(
                         key=lambda x: x[sort_by], reverse=desc)
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
-                    {"orders": purchase_orders["Items"]}, default=serialize_float)
+                    {"orders": purchase_orders}, default=serialize_float)
 
             case "GET /merchant/purchase-orders/{client_id}/{purchase_order_id}":
                 po_key = {"purchase_order_id":  int(
                     event["pathParameters"]["purchase_order_id"]), "client_id":  event["pathParameters"]["client_id"]}
 
-                purchase_order = po_table.get_item(Key=po_key)
+                purchase_order = po_table.get_item(Key=po_key)["Item"]
                 purchase_order_lines = ammendments_table.get_item(Key=po_key)
 
                 if "Item" in purchase_order_lines:
-                    for line_index, line in enumerate(purchase_order["Item"]["data"]):
+                    for line_index, line in enumerate(purchase_order["data"]):
                         confirmed_line = search(
                             purchase_order_lines["Item"]["lines"], "line", line["line"])
                         if confirmed_line != None:
-                            purchase_order["Item"]["data"][line_index]["confirmed"] = confirmed_line["confirmed"]
+                            purchase_order["data"][line_index]["confirmed"] = confirmed_line["confirmed"]
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
-                    {"purchase_order": purchase_order["Item"]}, default=serialize_float)
+                    {"purchase_order": purchase_order}, default=serialize_float)
 
             case "PUT /client/purchase-orders":
                 payload = json.loads(event["body"], parse_float=Decimal)
+                client = search(clients, "client_id", payload["client_id"])
                 check_hmac(event["body"], event["headers"]
-                           ["Authorization"], payload["client_id"])
-                client = search(clients, "client_id",
-                                payload["client_id"])
+                           ["Authorization"], client["hmac"])
+
                 items = 0
 
                 for line in payload["data"]:
@@ -254,16 +253,16 @@ def handler(event, context, route_key, response):
                     event["pathParameters"]["purchase_order_id"]), event["pathParameters"]["client_id"]
 
                 purchase_order = po_table.get_item(
-                    Key={"purchase_order_id": purchase_order_id, "client_id": client_id})
+                    Key={"purchase_order_id": purchase_order_id, "client_id": client_id})["Item"]
 
-                if purchase_order["Item"]["status"] == "confirmed":
+                if purchase_order["status"] == "confirmed":
                     raise Exception("this purchase order is completed")
 
-                body = json.loads(event["body"])
-                ammendments_table.put_item(Item=body)
+                payload = json.loads(event["body"])
+                ammendments_table.put_item(Item=payload)
 
                 confirmed_lines = []
-                for ammendment, po_line in zip(body["lines"], purchase_order["Item"]["data"]):
+                for ammendment, po_line in zip(payload["lines"], purchase_order["data"]):
                     confirmed_lines.append(ammendment["line"] == int(
                         po_line["line"]) and ammendment["confirmed"] == int(po_line["quantity"]))
 
@@ -272,15 +271,15 @@ def handler(event, context, route_key, response):
                 new_modified = datetime.now(
                     timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-                purchase_order["Item"]["status"] = status
-                purchase_order["Item"]["modified"] = new_modified
-                body["status"] = status
-                body["modified"] = new_modified
-                po_table.put_item(Item=purchase_order["Item"])
+                purchase_order["status"] = status
+                purchase_order["modified"] = new_modified
+                payload["status"] = status
+                payload["modified"] = new_modified
+                po_table.put_item(Item=purchase_order)
 
                 client = search(clients, "client_id", client_id)
 
-                return_payload = json.dumps(body)
+                return_payload = json.dumps(payload)
                 hmac_hex = hmac.digest(client["hmac"].encode(), str(
                     return_payload).encode(), digest=hashlib.sha256).hex()
                 headers = {"Authorization": hmac_hex}
@@ -295,7 +294,7 @@ def handler(event, context, route_key, response):
                 dispatch_uuid = str(uuid.uuid4())
 
                 dispatch_item = {"dispatch_id": dispatch_uuid, "purchase_order": purchase_order_id,
-                                 "status": "pending-supplier", "address": client["address"], "client_id": client_id, "estimated_delivery": purchase_order["Item"]["estimated_delivery"]}
+                                 "status": "pending-supplier", "address": client["address"], "client_id": client_id, "estimated_delivery": purchase_order["estimated_delivery"]}
                 dispatch_table.put_item(Item=dispatch_item)
                 dispatch_payload = json.dumps(dispatch_item)
 
@@ -316,10 +315,10 @@ def handler(event, context, route_key, response):
                 response["body"] = json.dumps({"message": message})
 
             case "GET /client/dispatch-cost":
-                check_hmac(str(event["queryStringParameters"]), event["headers"]
-                           ["Authorization"], event["queryStringParameters"]["client_id"])
                 client = search(clients, "client_id",
                                 event["queryStringParameters"]["client_id"])
+                check_hmac(str(event["queryStringParameters"]),
+                           event["headers"]["Authorization"], client["hmac"])
 
                 freight = get_dispatch(
                     event["queryStringParameters"]["items"], client)
@@ -330,8 +329,10 @@ def handler(event, context, route_key, response):
             case "PATCH /client/dispatches/{dispatch_id}":
                 payload = json.loads(event["body"])
                 dispatch_id = event["pathParameters"]["dispatch_id"]
+
+                client = search(clients, "client_id", payload["client_id"])
                 check_hmac(event["body"], event["headers"]
-                           ["Authorization"], payload["client_id"])
+                           ["Authorization"], client["hmac"])
 
                 dispatch_item = dispatch_table.get_item(
                     Key={"dispatch_id": dispatch_id})["Item"]
@@ -354,31 +355,31 @@ def handler(event, context, route_key, response):
                 desc = order_by == "desc"
 
                 dispatches = dispatch_table.scan(
-                    FilterExpression=Attr("client_id").contains(client_id))
-                dispatches["Items"].sort(
+                    FilterExpression=Attr("client_id").contains(client_id))["Items"]
+                dispatches.sort(
                     key=lambda x: x[sort_by], reverse=desc)
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
-                    {"dispatches": dispatches["Items"]}, default=serialize_float)
+                    {"dispatches": dispatches}, default=serialize_float)
 
             case "GET /merchant/dispatches/{dispatch_id}":
                 dispatch_id = event["pathParameters"]["dispatch_id"]
                 dispatch_item = dispatch_table.get_item(
-                    Key={"dispatch_id": dispatch_id})
+                    Key={"dispatch_id": dispatch_id})["Item"]
 
                 current_delivery_date = datetime.strptime(
-                    dispatch_item["Item"]["estimated_delivery"], "%Y-%m-%d %H:%M")
+                    dispatch_item["estimated_delivery"], "%Y-%m-%d %H:%M")
                 now = datetime.now()
-                dispatch_object = {"dispatch": dispatch_item["Item"]}
+                dispatch_object = {"dispatch": dispatch_item}
 
                 if now > current_delivery_date:
                     purchase_order = po_table.get_item(
-                        Key={"client_id": dispatch_item["Item"]["client_id"], "purchase_order_id": dispatch_item["Item"]["purchase_order"]})
+                        Key={"client_id": dispatch_item["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})
                     items = sum([line["quantity"]
-                                for line in purchase_order["Item"]["data"]])
+                                for line in purchase_order["data"]])
                     client = search(clients, "client_id",
-                                    dispatch_item["Item"]["client_id"])
+                                    dispatch_item["client_id"])
                     new_delivery_date = get_dispatch(items, client)[
                         "estimated_delivery"]
                     dispatch_object["dispatch"]["new_delivery_date"] = new_delivery_date
@@ -407,21 +408,21 @@ def handler(event, context, route_key, response):
                         "there was an error returning a dispatch order to the client")
 
                 dispatch_item = dispatch_table.get_item(
-                    Key={"dispatch_id": dispatch_id})
+                    Key={"dispatch_id": dispatch_id})["Item"]
 
-                if dispatch_item["Item"]["estimated_delivery"] != payload["estimated_delivery"]:
-                    dispatch_item["Item"]["estimated_delivery"] = payload["estimated_delivery"]
+                if dispatch_item["estimated_delivery"] != payload["estimated_delivery"]:
+                    dispatch_item["estimated_delivery"] = payload["estimated_delivery"]
 
                     purchase_order = po_table.get_item(
-                        Key={"client_id": payload["client_id"], "purchase_order_id": dispatch_item["Item"]["purchase_order"]})
-                    purchase_order["Item"]["estimated_delivery"] = payload["estimated_delivery"]
-                    purchase_order["Item"]["modified"] = datetime.now(
+                        Key={"client_id": payload["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})["Item"]
+                    purchase_order["estimated_delivery"] = payload["estimated_delivery"]
+                    purchase_order["modified"] = datetime.now(
                         timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-                    po_table.put_item(Item=purchase_order["Item"])
+                    po_table.put_item(Item=purchase_order)
 
-                dispatch_item["Item"]["status"] = payload["status"] = payload["status"]
-                dispatch_table.put_item(Item=dispatch_item["Item"])
+                dispatch_item["status"] = payload["status"] = payload["status"]
+                dispatch_table.put_item(Item=dispatch_item)
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
