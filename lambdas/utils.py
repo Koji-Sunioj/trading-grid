@@ -9,15 +9,6 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, date
 
 
-def handler():
-    return (os.environ.get("STORE_COORDS"), os.environ.get("TOKEN_KEY"))
-
-
-store_coords, token_key = handler()
-print(store_coords)
-print(token_key)
-
-
 def serialize_float(obj):
     return float(obj)
 
@@ -36,15 +27,11 @@ def search(dicts, key, value):
         return None
 
 
-def get_dispatch(items, client):
+def get_dispatch(items, client, coords, api_key):
     lat, long = client["coords"]["latitude"], client["coords"]["longitude"]
 
     distance_lookup = requests.get("https://api.radar.io/v1/route/distance?origin=%s&destination=%s,%s&modes=car&units=metric" % (
-        os.environ.get("STORE_COORDS"), lat, long), headers={"Authorization": os.environ.get("TOKEN_KEY")})
-
-    print(distance_lookup.url)
-    freight = distance_lookup.json()
-    print(freight)
+        coords, lat, long), headers={"Authorization": api_key})
 
     freight = distance_lookup.json()["routes"]["car"]
     kilometers, minutes = int(
