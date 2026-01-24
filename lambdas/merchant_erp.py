@@ -227,7 +227,7 @@ def handler(event, context, route_key, response):
 
                 if now > current_delivery_date:
                     purchase_order = po_table.get_item(
-                        Key={"client_id": dispatch_item["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})
+                        Key={"client_id": dispatch_item["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})["Item"]
                     items = sum([line["quantity"]
                                 for line in purchase_order["data"]])
                     client = search(clients, "client_id",
