@@ -232,7 +232,7 @@ def handler(event, context, route_key, response):
                                 for line in purchase_order["data"]])
                     client = search(clients, "client_id",
                                     dispatch_item["client_id"])
-                    new_delivery_date = get_dispatch(items, client)[
+                    new_delivery_date = get_dispatch(items, client, os.environ.get("STORE_COORDS"), os.environ.get("TOKEN_KEY"))[
                         "estimated_delivery"]
                     dispatch_object["dispatch"]["new_delivery_date"] = new_delivery_date
 

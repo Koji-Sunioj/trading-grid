@@ -59,7 +59,8 @@ def handler(event, context, route_key, response):
                 for line in payload["data"]:
                     items += line["quantity"]
 
-                freight = get_dispatch(items, client)
+                freight = get_dispatch(items, client, os.environ.get(
+                    "STORE_COORDS"), os.environ.get("TOKEN_KEY"))
 
                 if freight["estimated_delivery"] != payload["estimated_delivery"] or round(freight["freight_cost"], 2) != round(float(payload["dispatch_cost"]), 2):
                     raise Exception("cost provided by customer not matching")
@@ -123,7 +124,7 @@ def handler(event, context, route_key, response):
                            event["headers"]["Authorization"], client["hmac"])
 
                 freight = get_dispatch(
-                    event["queryStringParameters"]["items"], client)
+                    event["queryStringParameters"]["items"], client, os.environ.get("STORE_COORDS"), os.environ.get("TOKEN_KEY"))
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(freight)
