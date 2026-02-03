@@ -32,8 +32,7 @@ export const RoutingTable = () => {
   };
 
   const sendClientData = async (event) => {
-    document.getElementById("loading-message").classList.add("loading");
-    document.getElementById("form-fieldset").disabled = true;
+    setUIState({ loading: true, message: "creating new client id" });
     event.preventDefault();
     const {
       target: {
@@ -62,20 +61,15 @@ export const RoutingTable = () => {
     );
 
     const { status } = response;
-
+    const { message } = await response.json();
     if (status === 200) {
-      const { message } = await response.json();
-      alert(message);
       fetchClients("refreshing data...");
-    } else {
-      alert("there was an error");
     }
-
-    document.getElementById("form-fieldset").disabled = false;
+    alert(message);
   };
 
   const deleteClient = async (client_id) => {
-    document.getElementById("loading-message").classList.add("loading");
+    setUIState({ loading: true, message: `deleting client id ${client_id}` });
     const response = await fetch(
       import.meta.env.VITE_API + `/merchant/routing-table/${client_id}`,
       {
@@ -83,15 +77,12 @@ export const RoutingTable = () => {
         credentials: "include",
       }
     );
-
     const { status } = response;
+    const { message } = await response.json();
     if (status === 200) {
-      const { message } = await response.json();
-      alert(message);
       fetchClients("refreshing data...");
-    } else {
-      alert("there was an error");
     }
+    alert(message);
   };
 
   return (
@@ -102,7 +93,7 @@ export const RoutingTable = () => {
       </div>
       <div className="sign-in">
         <form onSubmit={sendClientData}>
-          <fieldset id="form-fieldset">
+          <fieldset id="form-fieldset" disabled={UIState.loading}>
             <div className="field">
               <p className="control">
                 <input

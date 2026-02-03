@@ -73,10 +73,11 @@ def handler(event, context, route_key, response):
                 address_lookup = requests.get(
                     "https://api.radar.io/v1/geocode/forward?query=%s" % payload["address"], headers={"Authorization": os.environ.get("TOKEN_KEY")})
 
-                if address_lookup.status_code != 200:
+                address_response = address_lookup.json()
+
+                if address_lookup.status_code != 200 or ("addresses" in address_response and len(address_response["addresses"]) == 0):
                     raise Exception("address is not valid")
 
-                address_response = address_lookup.json()
                 lat, long = address_response["addresses"][0]["latitude"], address_response["addresses"][0]["longitude"]
                 decimal_prec = Context(prec=6)
                 payload["coords"] = {"latitude": decimal_prec.create_decimal_from_float(

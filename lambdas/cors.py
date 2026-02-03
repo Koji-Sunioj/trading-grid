@@ -15,6 +15,8 @@ def handler(event, context):
             response["headers"]["Access-Control-Allow-Credentials"] = "true"
             response["headers"]["Access-Control-Allow-Headers"] = "Content-Type"
             response["headers"]["Access-Control-Allow-Methods"] = "DELETE"
+        else:
+            raise Exception("client is not whitelisted")
 
     except Exception as error:
         print("error name %s" % error.__class__.__name__)
