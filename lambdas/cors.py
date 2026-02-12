@@ -2,14 +2,14 @@ import os
 import json
 import traceback
 
+merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
 
 def handler(event, context):
     response = {}
     response['headers'] = {}
 
     try:
-        accepted_origins = os.environ.get("ACCEPTED_ORIGINS").split(",")
-        if event["headers"]["origin"] in accepted_origins:
+        if event["headers"]["origin"] == merchant_params["dev-server"] or event["headers"]["origin"] == merchant_params["prod-server"]:
             response["statusCode"] = 200
             response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
             response["headers"]["Access-Control-Allow-Credentials"] = "true"

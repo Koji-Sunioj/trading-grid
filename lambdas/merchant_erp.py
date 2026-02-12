@@ -21,7 +21,7 @@ routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
 dispatch_table = dynamodb.Table(os.environ.get("DISPATCH_TABLE"))
 ammendments_table = dynamodb.Table(
     os.environ.get("PO_AMMENDMENT_TABLE"))
-
+merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
 
 def validate(function):
     @wraps(function)
@@ -71,7 +71,7 @@ def handler(event, context, route_key, response):
                 payload = json.loads(event["body"])
 
                 address_lookup = requests.get(
-                    "https://api.radar.io/v1/geocode/forward?query=%s" % payload["address"], headers={"Authorization": os.environ.get("TOKEN_KEY")})
+                    "https://api.radar.io/v1/geocode/forward?query=%s" % payload["address"], headers={"Authorization": merchant_params["distance-api-key"]})
 
                 address_response = address_lookup.json()
 
@@ -233,7 +233,7 @@ def handler(event, context, route_key, response):
                                 for line in purchase_order["data"]])
                     client = search(clients, "client_id",
                                     dispatch_item["client_id"])
-                    new_delivery_date = get_dispatch(items, client, os.environ.get("STORE_COORDS"), os.environ.get("TOKEN_KEY"))[
+                    new_delivery_date = get_dispatch(items, client, merchant_params["store-coords"], merchant_params["distance-api-key"])[
                         "estimated_delivery"]
                     dispatch_object["dispatch"]["new_delivery_date"] = new_delivery_date
 

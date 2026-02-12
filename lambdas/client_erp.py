@@ -15,7 +15,7 @@ routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
 dispatch_table = dynamodb.Table(os.environ.get("DISPATCH_TABLE"))
 ammendments_table = dynamodb.Table(
     os.environ.get("PO_AMMENDMENT_TABLE"))
-
+merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
 
 def validate(function):
     @wraps(function)
@@ -59,8 +59,7 @@ def handler(event, context, route_key, response):
                 for line in payload["data"]:
                     items += line["quantity"]
 
-                freight = get_dispatch(items, client, os.environ.get(
-                    "STORE_COORDS"), os.environ.get("TOKEN_KEY"))
+                freight = get_dispatch(items, client, merchant_params["store-coords"], merchant_params["distance-api-key"])
 
                 if freight["estimated_delivery"] != payload["estimated_delivery"] or round(freight["freight_cost"], 2) != round(float(payload["dispatch_cost"]), 2):
                     raise Exception("cost provided by customer not matching")
@@ -124,7 +123,7 @@ def handler(event, context, route_key, response):
                            event["headers"]["Authorization"], client["hmac"])
 
                 freight = get_dispatch(
-                    event["queryStringParameters"]["items"], client, os.environ.get("STORE_COORDS"), os.environ.get("TOKEN_KEY"))
+                    event["queryStringParameters"]["items"], client, merchant_params["store-coords"], merchant_params["distance-api-key"])
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(freight)
