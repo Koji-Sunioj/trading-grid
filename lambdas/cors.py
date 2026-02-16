@@ -1,8 +1,12 @@
 import os
 import json
+import boto3
 import traceback
 
 merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
+description = boto3.client('cloudformation'.describe_stacks(StackName='merchant-api')
+print(description["Stacks"][0]["Outputs"])
+
 
 def handler(event, context):
     response = {}
