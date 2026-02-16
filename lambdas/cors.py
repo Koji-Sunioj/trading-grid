@@ -3,7 +3,7 @@ import json
 import boto3
 import traceback
 
-import utils import search
+from utils import search
 
 
 merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
