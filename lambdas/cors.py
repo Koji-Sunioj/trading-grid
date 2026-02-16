@@ -3,9 +3,13 @@ import json
 import boto3
 import traceback
 
+import utils import search
+
 merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
-description = boto3.client('cloudformation'.describe_stacks(StackName='merchant-api')
-print(description["Stacks"][0]["Outputs"])
+react_cfn_outputs = boto3.client('cloudformation').describe_stacks(StackName='merchant-webapp')["Stacks"][0]["Outputs"]
+
+cloudfront = search(react_cfn_outputs,"OutputKey","CloudFrontURL")
+print(cloudfront)
 
 
 def handler(event, context):
