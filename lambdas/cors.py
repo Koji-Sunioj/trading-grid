@@ -5,19 +5,17 @@ import traceback
 
 import utils import search
 
+
 merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
 react_cfn_outputs = boto3.client('cloudformation').describe_stacks(StackName='merchant-webapp')["Stacks"][0]["Outputs"]
-
-cloudfront = search(react_cfn_outputs,"OutputKey","CloudFrontURL")
-print(cloudfront)
-
+cloudfront_react_url = "https://%s" % search(react_cfn_outputs,"OutputKey","CloudFrontURL")["OutputValue"]
 
 def handler(event, context):
     response = {}
     response['headers'] = {}
 
     try:
-        if event["headers"]["origin"] == merchant_params["dev-server"] or event["headers"]["origin"] == merchant_params["prod-server"]:
+        if event["headers"]["origin"] == merchant_params["dev-server"] or event["headers"]["origin"] == cloudfront_react_url:
             response["statusCode"] = 200
             response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
             response["headers"]["Access-Control-Allow-Credentials"] = "true"
