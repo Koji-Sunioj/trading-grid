@@ -14,7 +14,7 @@ env:
   AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
 
 jobs:
-  update:
+  update-s3:
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v3
@@ -42,3 +42,8 @@ jobs:
           #--function-name $CLIENT_ERP_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
           #aws lambda update-function-code --region eu-north-1 \
           #--function-name $UTILS_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
+  update-lambda-pointers:
+    needs: update-s3
+    runs-on: "ubuntu-latest"
+    uses: Koji-Sunioj/trading-grid-cfn/.github/workflows/pushes.yaml@main
+    
