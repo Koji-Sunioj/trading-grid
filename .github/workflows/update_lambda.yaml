@@ -44,6 +44,5 @@ jobs:
           #--function-name $UTILS_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
   update-lambda-pointers:
     needs: update-s3
-    runs-on: "ubuntu-latest"
     uses: Koji-Sunioj/trading-grid-cfn/.github/workflows/pushes.yaml@main
     
