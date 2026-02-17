@@ -17,7 +17,7 @@ env:
   REST_API_URL: ${{ secrets.REST_API_URL }}
 
 jobs:
-  update:
+  update-webapp-s3:
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v6
@@ -35,3 +35,14 @@ jobs:
         uses: jakejarvis/s3-sync-action@master
         with:
           args: --follow-symlinks --delete
+
+  invalidate-cloudfront: 
+    runs-on: "ubuntu-latest"
+    needs: update-webapp-s3
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT }}
+          repository: Koji-Sunioj/trading-grid-cfn
+          event-type: updated-cloudfront-app
