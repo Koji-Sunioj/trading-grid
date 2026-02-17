@@ -8,22 +8,27 @@ on:
       - lambdas/*
   workflow_dispatch:
 
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v3
       - name: update s3 and lambda
         working-directory: lambdas
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-          AUTH_LAMBDA: ${{ secrets.AUTH_LAMBDA }}
-          MERCHANT_ERP_LAMBDA: ${{ secrets.MERCHANT_ERP_LAMBDA }}
-          CORS_LAMBDA: ${{ secrets.CORS_LAMBDA }}
-          CLIENT_ERP_LAMBDA: ${{ secrets.CLIENT_ERP_LAMBDA }}
-          UTILS_LAMBDA: ${{ secrets.UTILS_LAMBDA }}
+        #env:
+          #AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          #AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          #AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          #AUTH_LAMBDA: ${{ secrets.AUTH_LAMBDA }}
+          #MERCHANT_ERP_LAMBDA: ${{ secrets.MERCHANT_ERP_LAMBDA }}
+          #CORS_LAMBDA: ${{ secrets.CORS_LAMBDA }}
+          #CLIENT_ERP_LAMBDA: ${{ secrets.CLIENT_ERP_LAMBDA }}
+          #UTILS_LAMBDA: ${{ secrets.UTILS_LAMBDA }}
         run: |
           zip -r functions.zip *.py
           aws s3api put-object --region eu-north-1 --bucket $AWS_S3_BUCKET --key functions.zip --body functions.zip
