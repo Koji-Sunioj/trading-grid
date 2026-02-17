@@ -23,7 +23,6 @@ jobs:
         with:
           node-version: "24"
       - name: install and build
-        env:
         run: |
           npm install
           echo "VITE_API=$REST_API_URL" > .env.production
