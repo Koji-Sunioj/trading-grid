@@ -30,10 +30,10 @@ jobs:
           npm run build
       - name: upload to s3
         uses: jakejarvis/s3-sync-action@master
-        working-directory: frontend
+        #working-directory: frontend
         with:
           args: --follow-symlinks --delete
         env:
           AWS_S3_BUCKET:  ${{ secrets.WEBAPP_BUCKET }}
           AWS_REGION: 'eu-north-1'
-          SOURCE_DIR: 'dist'
+          SOURCE_DIR: 'frontend/dist'
