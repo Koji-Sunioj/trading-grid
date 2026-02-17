@@ -42,7 +42,16 @@ jobs:
           #--function-name $CLIENT_ERP_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
           #aws lambda update-function-code --region eu-north-1 \
           #--function-name $UTILS_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
-  update-lambda-pointers:
+          #update-lambda-pointers:
+  update-cfn: 
     needs: update-s3
-    uses: Koji-Sunioj/trading-grid-cfn/.github/workflows/pushes.yaml@main
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT }}
+          repository: Koji-Sunioj/trading-grid-cfn
+          event-type: updated-function-zip
+
+ 
     
