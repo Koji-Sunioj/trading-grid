@@ -27,13 +27,13 @@ jobs:
         run: |
           zip -r functions.zip *.py
           aws s3api put-object --region eu-north-1 --bucket $AWS_S3_BUCKET --key functions.zip --body functions.zip
-          aws lambda update-function-code --region eu-north-1 \
-          --function-name $AUTH_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
-          aws lambda update-function-code --region eu-north-1 \
-          --function-name $MERCHANT_ERP_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
-          aws lambda update-function-code --region eu-north-1 \
-          --function-name $CORS_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
-          aws lambda update-function-code --region eu-north-1 \
-          --function-name $CLIENT_ERP_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
-          aws lambda update-function-code --region eu-north-1 \
-          --function-name $UTILS_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
+          #aws lambda update-function-code --region eu-north-1 \
+          #--function-name $AUTH_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
+          #aws lambda update-function-code --region eu-north-1 \
+          #--function-name $MERCHANT_ERP_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
+          #aws lambda update-function-code --region eu-north-1 \
+          #--function-name $CORS_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
+          #aws lambda update-function-code --region eu-north-1 \
+          #--function-name $CLIENT_ERP_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
+          #aws lambda update-function-code --region eu-north-1 \
+          #--function-name $UTILS_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
