@@ -11,6 +11,7 @@ on:
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  REST_API_URL: ${{ secrets.REST_API_URL }}
 
 jobs:
   update:
@@ -21,6 +22,12 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "24"
+      - name: install and build
+        env:
+        run: |
+          npm install
+          echo "VITE_API=$REST_API_URL" > .env.production
+          npm run build
       - name: upload to s3
         uses: jakejarvis/s3-sync-action@master
         with:
@@ -28,4 +35,4 @@ jobs:
         env:
           AWS_S3_BUCKET:  ${{ secrets.WEBAPP_BUCKET }}
           AWS_REGION: 'eu-north-1'
-          SOURCE_DIR: 'dist'
+          SOURCE_DIR: 'd=ist'
