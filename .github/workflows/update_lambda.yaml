@@ -44,6 +44,7 @@ jobs:
           #--function-name $UTILS_LAMBDA --s3-bucket $AWS_S3_BUCKET --s3-key functions.zip
           #update-lambda-pointers:
   update-cfn: 
+    runs-on: "ubuntu-latest"
     needs: update-s3
     steps:
       - name: Repository Dispatch
