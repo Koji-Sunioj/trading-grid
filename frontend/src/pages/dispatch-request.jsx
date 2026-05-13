@@ -127,7 +127,7 @@ export const DispatchRequest = () => {
                     ></input>
                   </p>
                 </div>
-                {["handover", "rescheduled"].includes(nextAction) && (
+                {["shipped", "rescheduled"].includes(nextAction) && (
                   <div className="field">
                     <p className="control">
                       <button className="button is-success">submit</button>

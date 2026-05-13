@@ -31,13 +31,15 @@ export const determineNextAction = (dispatchRequest) => {
   const deliveryDate = new Date(estimated_delivery);
   const now = new Date();
 
-  if (now > deliveryDate) {
+  const isShipped = dispatchRequest.status === "received";
+
+  if (now > deliveryDate && !isShipped) {
     return "rescheduled";
   } else if (
     deliveryDate.toISOString().substring(0, 10) ===
-    now.toISOString().substring(0, 10)
+    now.toISOString().substring(0, 10) && !isShipped
   ) {
-    return "handover";
+    return "shipped";
   } else {
     return "no action";
   }
