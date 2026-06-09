@@ -16,7 +16,7 @@ export const SignIn = () => {
       },
     } = event;
 
-    const response = await fetch(import.meta.env.VITE_API + "/auth", {
+    const response = await fetch("https://d2njfxu1e215fc.cloudfront.net/prod/auth", {
       method: "POST",
       credentials: "include",
       body: JSON.stringify({
