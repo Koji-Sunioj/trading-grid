@@ -2,15 +2,16 @@ import os
 import json
 import boto3
 import traceback
+import datetime
 
 response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
-
 def handler(event, context):
+    
     try:
-        if "origin" in event["headers"]:
-            response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
+        if "Origin" in event["headers"]:
+            response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
 
         response["headers"]["Access-Control-Allow-Credentials"] = "true"
         cognito = boto3.client("cognito-idp")
@@ -18,10 +19,10 @@ def handler(event, context):
 
         match route_key:
             case "GET /auth":
-                if "cookie" not in event["headers"]:
+                if "Cookie" not in event["headers"]:
                     raise Exception("please log in again")
 
-                token = event["headers"]["cookie"].split("=")[1]
+                token = event["headers"]["Cookie"].split("=")[1]
                 cognito_response = cognito.get_user(AccessToken=token)
                 response["statusCode"] = 200
                 response["body"] = json.dumps(

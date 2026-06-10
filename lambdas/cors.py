@@ -15,9 +15,9 @@ def handler(event, context):
     response['headers'] = {}
 
     try:
-        if event["headers"]["origin"] == merchant_params["dev-server"] or event["headers"]["origin"] == cloudfront_react_url:
+        if event["headers"]["Origin"] == merchant_params["dev-server"] or event["headers"]["Origin"] == cloudfront_react_url:
             response["statusCode"] = 200
-            response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
+            response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
             response["headers"]["Access-Control-Allow-Credentials"] = "true"
             response["headers"]["Access-Control-Allow-Headers"] = "Content-Type"
             response["headers"]["Access-Control-Allow-Methods"] = "DELETE"

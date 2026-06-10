@@ -34,9 +34,9 @@ def validate(function):
 
         if "/merchant" in event['resource']:
             cognito = boto3.client("cognito-idp")
-            token = event["headers"]["cookie"].split("=")[1]
+            token = event["headers"]["Cookie"].split("=")[1]
             cognito.get_user(AccessToken=token)
-            response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["origin"]
+            response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
             response["headers"]["Access-Control-Allow-Credentials"] = "true"
 
         if event["httpMethod"] in ["POST", "PUT"] and event["body"] == None:
@@ -45,7 +45,7 @@ def validate(function):
             return response
 
         invalid_client = "/client" in event['resource'] and "Authorization" not in event["headers"]
-        invalid_merchant = "/merchant" in event['resource'] and "cookie" not in event["headers"]
+        invalid_merchant = "/merchant" in event['resource'] and "Cookie" not in event["headers"]
 
         if invalid_client or invalid_merchant:
             response["statusCode"] = 401
