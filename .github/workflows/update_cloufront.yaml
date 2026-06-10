@@ -8,14 +8,6 @@ on:
       - frontend/**
   workflow_dispatch:
  
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
-  AWS_S3_BUCKET:  ${{ secrets.WEBAPP_BUCKET }}
-  AWS_REGION: 'eu-north-1'
-  SOURCE_DIR: 'frontend/dist'
-  REST_API_URL: ${{ secrets.REST_API_URL }}
-
 jobs:
   update-webapp-s3:
     runs-on: "ubuntu-latest"
@@ -27,6 +19,8 @@ jobs:
           node-version: "24"
       - name: install and build
         working-directory: frontend
+        env:
+          REST_API_URL: ${{ secrets.REST_API_URL }}
         run: |
           npm install
           echo "VITE_API=$REST_API_URL" > .env.production
@@ -35,6 +29,12 @@ jobs:
         uses: jakejarvis/s3-sync-action@master
         with:
           args: --follow-symlinks --delete
+        env:
+          AWS_S3_BUCKET:  ${{ secrets.WEBAPP_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
+          AWS_REGION: 'eu-north-1'
+          SOURCE_DIR: 'frontend/dist'
 
   invalidate-cloudfront: 
     runs-on: "ubuntu-latest"
