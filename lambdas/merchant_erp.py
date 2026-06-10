@@ -36,7 +36,9 @@ def validate(function):
             cognito = boto3.client("cognito-idp")
             token = event["headers"]["Cookie"].split("=")[1]
             cognito.get_user(AccessToken=token)
-            response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
+            if "Origin" in event["headers"]:
+                response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
+            
             response["headers"]["Access-Control-Allow-Credentials"] = "true"
 
         if event["httpMethod"] in ["POST", "PUT"] and event["body"] == None:
