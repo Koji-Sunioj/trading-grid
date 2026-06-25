@@ -47,6 +47,9 @@ def validate(function):
                 response["body"] = json.dumps({"message": "no body in request"})
                 return response
 
+            executed = function(*args, route_key, response)
+            return executed
+
         except boto3.client("cognito-idp").exceptions.NotAuthorizedException:
             response["statusCode"] = 401
             response["body"] = json.dumps({"message": "invalid credentials"})
@@ -60,8 +63,7 @@ def validate(function):
             response['statusCode'] = 400
             response["body"] = json.dumps({"message": error_message})
             return response
-
-        return function(*args, route_key, response)
+        
     return lambda_request
 
 

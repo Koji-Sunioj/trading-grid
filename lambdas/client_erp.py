@@ -32,8 +32,10 @@ def validate(function):
                 response["body"] = json.dumps({"message": "no body in request"})
                 return response
         
+            executed = function(*args, route_key, response)
+            return executed
+
         except HMACException:
-            print("hmacced yall")
             response["statusCode"] = 401
             response["body"] = json.dumps({"message": "invalid credentials"})
             return response
@@ -46,7 +48,6 @@ def validate(function):
             response['statusCode'] = 400
             response["body"] = json.dumps({"message": error_message})
 
-        return function(*args, route_key, response)
     return lambda_request
 
 
