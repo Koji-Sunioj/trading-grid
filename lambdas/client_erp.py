@@ -31,15 +31,9 @@ def validate(function):
                 response["statusCode"] = 400
                 response["body"] = json.dumps({"message": "no body in request"})
                 return response
-
-            invalid_client = "/client" in event['resource'] and "Authorization" not in event["headers"]
-
-            if invalid_client:
-                response["statusCode"] = 401
-                response["body"] = json.dumps({"message": "invalid credentials"})
-                return response
         
         except HMACException:
+            print("hmacced yall")
             response["statusCode"] = 401
             response["body"] = json.dumps({"message": "invalid credentials"})
             return response
