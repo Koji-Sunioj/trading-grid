@@ -3,7 +3,7 @@ import json
 import boto3
 import traceback
 
-from utils import check_hmac, get_dispatch, search, HMACException
+from utils import check_hmac, get_dispatch, search, HMACxception
 
 from functools import wraps
 from decimal import Decimal
@@ -32,7 +32,7 @@ def validate(function):
                 response["body"] = json.dumps({"message": "no body in request"})
                 return response
         
-        except HMACException:
+        except HMACxception:
             print("hmacced yall")
             response["statusCode"] = 401
             response["body"] = json.dumps({"message": "invalid credentials"})
