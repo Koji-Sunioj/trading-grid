@@ -26,32 +26,39 @@ merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
 def validate(function):
     @wraps(function)
     def lambda_request(*args):
-        event = args[0]
+        try:
+            event = args[0]
 
-        route_key = "%s %s" % (event["httpMethod"], event['resource'])
-        response = {}
-        response['headers'] = {"Access-Control-Allow-Methods": "*"}
+            route_key = "%s %s" % (event["httpMethod"], event['resource'])
+            response = {}
+            response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
-        if "/merchant" in event['resource']:
-            cognito = boto3.client("cognito-idp")
-            token = event["headers"]["Cookie"].split("=")[1]
-            cognito.get_user(AccessToken=token)
+            if "/merchant" in event['resource']:
+                cognito = boto3.client("cognito-idp")
+                token = event["headers"]["Cookie"].split("=")[1]
+                cognito.get_user(AccessToken=token)
+                
             if "Origin" in event["headers"]:
-                response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
-            
-            response["headers"]["Access-Control-Allow-Credentials"] = "true"
+                response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]    
+                response["headers"]["Access-Control-Allow-Credentials"] = "true"
 
-        if event["httpMethod"] in ["POST", "PUT"] and event["body"] == None:
-            response["statusCode"] = 400
-            response["body"] = json.dumps({"message": "no body in request"})
-            return response
+            if event["httpMethod"] in ["POST", "PUT"] and event["body"] == None:
+                response["statusCode"] = 400
+                response["body"] = json.dumps({"message": "no body in request"})
+                return response
 
-        invalid_client = "/client" in event['resource'] and "Authorization" not in event["headers"]
-        invalid_merchant = "/merchant" in event['resource'] and "Cookie" not in event["headers"]
-
-        if invalid_client or invalid_merchant:
+        except NotAuthorizedException:
             response["statusCode"] = 401
             response["body"] = json.dumps({"message": "invalid credentials"})
+            return response
+
+        except Exception as error:
+            print("error name %s" % error.__class__.__name__)
+            print(traceback.format_exc())
+            error_message = error.__str__()
+
+            response['statusCode'] = 400
+            response["body"] = json.dumps({"message": error_message})
             return response
 
         return function(*args, route_key, response)
@@ -286,13 +293,5 @@ def handler(event, context, route_key, response):
 
             case _:
                 raise Exception("no matching resource")
-
-    except Exception as error:
-        print("error name %s" % error.__class__.__name__)
-        print(traceback.format_exc())
-        error_message = error.__str__()
-
-        response['statusCode'] = 400
-        response["body"] = json.dumps({"message": error_message})
 
     return response

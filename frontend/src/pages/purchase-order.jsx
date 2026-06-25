@@ -35,6 +35,7 @@ export const PurchaseOrder = () => {
     const { status } = response;
     if (status !== 200) {
       setPurchaseOrder({});
+      alert("asd");
     } else {
       const { purchase_order } = await response.json();
       setPurchaseOrder(purchase_order);
