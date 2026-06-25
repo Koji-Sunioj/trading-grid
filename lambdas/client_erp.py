@@ -124,7 +124,6 @@ def handler(event, context, route_key, response):
                 {"message": "purchase order %s received" % payload["purchase_order_id"]})
 
         case "GET /client/dispatch-cost":
-            raise HMACException("asdasd")
             client = search(clients, "client_id",
                             event["queryStringParameters"]["client_id"])
             check_hmac(str(event["queryStringParameters"]),
