@@ -67,231 +67,230 @@ def validate(function):
 
 @validate
 def handler(event, context, route_key, response):
-    try:
-        clients = routing_table.scan()["Items"]
+    clients = routing_table.scan()["Items"]
 
-        match route_key:
-            case "GET /merchant/routing-table":
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"clients": clients}, default=serialize_float)
+    match route_key:
+        case "GET /merchant/routing-table":
+            response["statusCode"] = 200
+            response["body"] = json.dumps(
+                {"clients": clients}, default=serialize_float)
 
-            case "POST /merchant/routing-table":
-                payload = json.loads(event["body"])
+        case "POST /merchant/routing-table":
+            payload = json.loads(event["body"])
 
-                address_lookup = requests.get(
-                    "https://api.radar.io/v1/geocode/forward?query=%s" % payload["address"], headers={"Authorization": merchant_params["distance-api-key"]})
+            address_lookup = requests.get(
+                "https://api.radar.io/v1/geocode/forward?query=%s" % payload["address"], headers={"Authorization": merchant_params["distance-api-key"]})
 
-                address_response = address_lookup.json()
+            address_response = address_lookup.json()
 
-                if address_lookup.status_code != 200 or ("addresses" in address_response and len(address_response["addresses"]) == 0):
-                    raise Exception("address is not valid")
+            if address_lookup.status_code != 200 or ("addresses" in address_response and len(address_response["addresses"]) == 0):
+                raise Exception("address is not valid")
 
-                lat, long = address_response["addresses"][0]["latitude"], address_response["addresses"][0]["longitude"]
-                decimal_prec = Context(prec=6)
-                payload["coords"] = {"latitude": decimal_prec.create_decimal_from_float(
-                    lat), "longitude": decimal_prec.create_decimal_from_float(long)}
+            lat, long = address_response["addresses"][0]["latitude"], address_response["addresses"][0]["longitude"]
+            decimal_prec = Context(prec=6)
+            payload["coords"] = {"latitude": decimal_prec.create_decimal_from_float(
+                lat), "longitude": decimal_prec.create_decimal_from_float(long)}
 
-                routing_table.put_item(Item=payload)
+            routing_table.put_item(Item=payload)
 
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"message": "client created successfully"})
+            response["statusCode"] = 200
+            response["body"] = json.dumps(
+                {"message": "client created successfully"})
 
-            case "DELETE /merchant/routing-table/{client_id}":
-                routing_table.delete_item(
-                    Key={"client_id": event["pathParameters"]["client_id"]})
+        case "DELETE /merchant/routing-table/{client_id}":
+            routing_table.delete_item(
+                Key={"client_id": event["pathParameters"]["client_id"]})
 
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"message": "item successfully deleted"})
+            response["statusCode"] = 200
+            response["body"] = json.dumps(
+                {"message": "item successfully deleted"})
 
-            case "GET /merchant/purchase-orders":
-                sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "modified"
-                order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
-                client_id = event["queryStringParameters"]["client_id"] if "client_id" in event["queryStringParameters"] else ""
-                desc = order_by == "desc"
+        case "GET /merchant/purchase-orders":
+            sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "modified"
+            order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
+            client_id = event["queryStringParameters"]["client_id"] if "client_id" in event["queryStringParameters"] else ""
+            desc = order_by == "desc"
 
-                purchase_orders = po_table.scan(
-                    FilterExpression=Attr("client_id").contains(client_id))["Items"]
+            purchase_orders = po_table.scan(
+                FilterExpression=Attr("client_id").contains(client_id))["Items"]
 
-                if sort_by == "line_count":
-                    purchase_orders.sort(
-                        key=lambda x: len(x["data"]), reverse=desc)
-                else:
-                    purchase_orders.sort(
-                        key=lambda x: x[sort_by], reverse=desc)
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"orders": purchase_orders}, default=serialize_float)
-
-            case "GET /merchant/purchase-orders/{client_id}/{purchase_order_id}":
-                po_key = {"purchase_order_id":  int(
-                    event["pathParameters"]["purchase_order_id"]), "client_id":  event["pathParameters"]["client_id"]}
-
-                purchase_order = po_table.get_item(Key=po_key)["Item"]
-                purchase_order_lines = ammendments_table.get_item(Key=po_key)
-
-                if "Item" in purchase_order_lines:
-                    for line_index, line in enumerate(purchase_order["data"]):
-                        confirmed_line = search(
-                            purchase_order_lines["Item"]["lines"], "line", line["line"])
-                        if confirmed_line != None:
-                            purchase_order["data"][line_index]["confirmed"] = confirmed_line["confirmed"]
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"purchase_order": purchase_order}, default=serialize_float)
-
-            case "POST /merchant/purchase-orders/{client_id}/{purchase_order_id}":
-                purchase_order_id, client_id = int(
-                    event["pathParameters"]["purchase_order_id"]), event["pathParameters"]["client_id"]
-
-                purchase_order = po_table.get_item(
-                    Key={"purchase_order_id": purchase_order_id, "client_id": client_id})["Item"]
-
-                if purchase_order["status"] == "confirmed":
-                    raise Exception("this purchase order is completed")
-
-                payload = json.loads(event["body"])
-                ammendments_table.put_item(Item=payload)
-
-                confirmed_lines = []
-                for ammendment, po_line in zip(payload["lines"], purchase_order["data"]):
-                    confirmed_lines.append(ammendment["line"] == int(
-                        po_line["line"]) and ammendment["confirmed"] == int(po_line["quantity"]))
-
-                status = "confirmed" if all(
-                    confirmed_lines) else "pending-buyer"
-                new_modified = datetime.now(
-                    timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-
-                purchase_order["status"] = status
-                purchase_order["modified"] = new_modified
-                payload["status"] = status
-                payload["modified"] = new_modified
-                po_table.put_item(Item=purchase_order)
-
-                client = search(clients, "client_id", client_id)
-
-                return_payload = json.dumps(payload)
-                hmac_hex = hmac.digest(client["hmac"].encode(), str(
-                    return_payload).encode(), digest=hashlib.sha256).hex()
-                headers = {"Authorization": hmac_hex}
-
-                client_response = requests.post(
-                    client["callback"]+"/api/merchant/purchase-orders", data=return_payload, headers=headers)
-
-                if client_response.status_code != 200:
-                    raise Exception(
-                        "there was an error returning an order response to the client")
-
-                message = "purchase order %s received at client with order status %s" % (
-                    purchase_order_id, status)
-
-                if status == "confirmed":
-                    dispatch_uuid = str(uuid.uuid4())
-
-                    dispatch_item = {"dispatch_id": dispatch_uuid, "purchase_order": purchase_order_id,
-                                 "status": "pending-supplier", "address": client["address"], "client_id": client_id, "estimated_delivery": purchase_order["estimated_delivery"]}
-                    dispatch_table.put_item(Item=dispatch_item)
-                    dispatch_payload = json.dumps(dispatch_item)
-
-                    hmac_hex = hmac.digest(client["hmac"].encode(), str(
-                        dispatch_payload).encode(), digest=hashlib.sha256).hex()
-                    headers = {"Authorization": hmac_hex}
-
-                    dispatch_request = requests.post(
-                        client["callback"] + "/api/merchant/shipment-orders", data=dispatch_payload, headers=headers)
-
-                    if dispatch_request.status_code != 200:
-                        raise Exception("dispatch triggered since confirmed lines equals requested quantity. however, there was an error returning a dispatch order to the client")
-
-                response["statusCode"] = 200
-                response["body"] = json.dumps({"message": message})
-
-            case "GET /merchant/dispatches":
-                sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "estimated_delivery"
-                order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
-                client_id = event["queryStringParameters"]["client_id"] if "client_id" in event["queryStringParameters"] else ""
-                desc = order_by == "desc"
-
-                dispatches = dispatch_table.scan(
-                    FilterExpression=Attr("client_id").contains(client_id))["Items"]
-                dispatches.sort(
+            if sort_by == "line_count":
+                purchase_orders.sort(
+                    key=lambda x: len(x["data"]), reverse=desc)
+            else:
+                purchase_orders.sort(
                     key=lambda x: x[sort_by], reverse=desc)
 
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"dispatches": dispatches}, default=serialize_float)
+            response["statusCode"] = 200
+            response["body"] = json.dumps(
+                {"orders": purchase_orders}, default=serialize_float)
 
-            case "GET /merchant/dispatches/{dispatch_id}":
-                dispatch_id = event["pathParameters"]["dispatch_id"]
-                dispatch_item = dispatch_table.get_item(
-                    Key={"dispatch_id": dispatch_id})["Item"]
+        case "GET /merchant/purchase-orders/{client_id}/{purchase_order_id}":
+            po_key = {"purchase_order_id":  int(
+                event["pathParameters"]["purchase_order_id"]), "client_id":  event["pathParameters"]["client_id"]}
 
-                current_delivery_date = datetime.strptime(
-                    dispatch_item["estimated_delivery"], "%Y-%m-%d %H:%M")
-                now = datetime.now()
-                dispatch_object = {"dispatch": dispatch_item}
+            purchase_order = po_table.get_item(Key=po_key)["Item"]
+            purchase_order_lines = ammendments_table.get_item(Key=po_key)
 
-                if now > current_delivery_date:
-                    purchase_order = po_table.get_item(
-                        Key={"client_id": dispatch_item["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})["Item"]
-                    items = sum([line["quantity"]
-                                for line in purchase_order["data"]])
-                    client = search(clients, "client_id",
-                                    dispatch_item["client_id"])
-                    new_delivery_date = get_dispatch(items, client, merchant_params["store-coords"], merchant_params["distance-api-key"])[
-                        "estimated_delivery"]
-                    dispatch_object["dispatch"]["new_delivery_date"] = new_delivery_date
+            if "Item" in purchase_order_lines:
+                for line_index, line in enumerate(purchase_order["data"]):
+                    confirmed_line = search(
+                        purchase_order_lines["Item"]["lines"], "line", line["line"])
+                    if confirmed_line != None:
+                        purchase_order["data"][line_index]["confirmed"] = confirmed_line["confirmed"]
 
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    dispatch_object, default=serialize_float)
+            response["statusCode"] = 200
+            response["body"] = json.dumps(
+                {"purchase_order": purchase_order}, default=serialize_float)
 
-            case "POST /merchant/dispatches/{dispatch_id}":
-                dispatch_id = event["pathParameters"]["dispatch_id"]
-                payload = json.loads(event["body"])
+        case "POST /merchant/purchase-orders/{client_id}/{purchase_order_id}":
+            purchase_order_id, client_id = int(
+                event["pathParameters"]["purchase_order_id"]), event["pathParameters"]["client_id"]
 
-                client = search(clients, "client_id", payload["client_id"])
+            purchase_order = po_table.get_item(
+                Key={"purchase_order_id": purchase_order_id, "client_id": client_id})["Item"]
 
-                return_payload = json.dumps(
-                    {"status": payload["status"], "estimated_delivery": payload["estimated_delivery"]})
+            if purchase_order["status"] == "confirmed":
+                raise Exception("this purchase order is completed")
+
+            payload = json.loads(event["body"])
+            ammendments_table.put_item(Item=payload)
+
+            confirmed_lines = []
+            for ammendment, po_line in zip(payload["lines"], purchase_order["data"]):
+                confirmed_lines.append(ammendment["line"] == int(
+                    po_line["line"]) and ammendment["confirmed"] == int(po_line["quantity"]))
+
+            status = "confirmed" if all(
+                confirmed_lines) else "pending-buyer"
+            new_modified = datetime.now(
+                timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+            purchase_order["status"] = status
+            purchase_order["modified"] = new_modified
+            payload["status"] = status
+            payload["modified"] = new_modified
+            po_table.put_item(Item=purchase_order)
+
+            client = search(clients, "client_id", client_id)
+
+            return_payload = json.dumps(payload)
+            hmac_hex = hmac.digest(client["hmac"].encode(), str(
+                return_payload).encode(), digest=hashlib.sha256).hex()
+            headers = {"Authorization": hmac_hex}
+
+            client_response = requests.post(
+                client["callback"]+"/api/merchant/purchase-orders", data=return_payload, headers=headers)
+
+            if client_response.status_code != 200:
+                raise Exception(
+                    "there was an error returning an order response to the client")
+
+            message = "purchase order %s received at client with order status %s" % (
+                purchase_order_id, status)
+
+            if status == "confirmed":
+                dispatch_uuid = str(uuid.uuid4())
+
+                dispatch_item = {"dispatch_id": dispatch_uuid, "purchase_order": purchase_order_id,
+                                "status": "pending-supplier", "address": client["address"], "client_id": client_id, "estimated_delivery": purchase_order["estimated_delivery"]}
+                dispatch_table.put_item(Item=dispatch_item)
+                dispatch_payload = json.dumps(dispatch_item)
+
                 hmac_hex = hmac.digest(client["hmac"].encode(), str(
-                    return_payload).encode(), digest=hashlib.sha256).hex()
+                    dispatch_payload).encode(), digest=hashlib.sha256).hex()
                 headers = {"Authorization": hmac_hex}
 
-                dispatch_update = requests.patch(
-                    client["callback"]+"/api/merchant/shipment-orders/%s" % dispatch_id, headers=headers, data=return_payload)
+                dispatch_request = requests.post(
+                    client["callback"] + "/api/merchant/shipment-orders", data=dispatch_payload, headers=headers)
 
-                if dispatch_update.status_code != 200:
-                    raise Exception(
-                        "there was an error returning a dispatch order to the client")
+                if dispatch_request.status_code != 200:
+                    raise Exception("dispatch triggered since confirmed lines equals requested quantity. however, there was an error returning a dispatch order to the client")
 
-                dispatch_item = dispatch_table.get_item(
-                    Key={"dispatch_id": dispatch_id})["Item"]
+            response["statusCode"] = 200
+            response["body"] = json.dumps({"message": message})
 
-                if dispatch_item["estimated_delivery"] != payload["estimated_delivery"]:
-                    dispatch_item["estimated_delivery"] = payload["estimated_delivery"]
+        case "GET /merchant/dispatches":
+            sort_by = event["queryStringParameters"]["sort"] if "sort" in event["queryStringParameters"] else "estimated_delivery"
+            order_by = event["queryStringParameters"]["order"] if "order" in event["queryStringParameters"] else "asc"
+            client_id = event["queryStringParameters"]["client_id"] if "client_id" in event["queryStringParameters"] else ""
+            desc = order_by == "desc"
 
-                    purchase_order = po_table.get_item(
-                        Key={"client_id": payload["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})["Item"]
-                    purchase_order["estimated_delivery"] = payload["estimated_delivery"]
-                    purchase_order["modified"] = datetime.now(
-                        timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+            dispatches = dispatch_table.scan(
+                FilterExpression=Attr("client_id").contains(client_id))["Items"]
+            dispatches.sort(
+                key=lambda x: x[sort_by], reverse=desc)
 
-                    po_table.put_item(Item=purchase_order)
+            response["statusCode"] = 200
+            response["body"] = json.dumps(
+                {"dispatches": dispatches}, default=serialize_float)
 
-                dispatch_item["status"] = payload["status"] = payload["status"]
-                dispatch_table.put_item(Item=dispatch_item)
+        case "GET /merchant/dispatches/{dispatch_id}":
+            dispatch_id = event["pathParameters"]["dispatch_id"]
+            dispatch_item = dispatch_table.get_item(
+                Key={"dispatch_id": dispatch_id})["Item"]
 
-                response["statusCode"] = 200
-                response["body"] = json.dumps(
-                    {"message": "dispatch %s updated at the clients server" % dispatch_id}, default=serialize_float)
+            current_delivery_date = datetime.strptime(
+                dispatch_item["estimated_delivery"], "%Y-%m-%d %H:%M")
+            now = datetime.now()
+            dispatch_object = {"dispatch": dispatch_item}
 
-            case _:
-                raise Exception("no matching resource")
+            if now > current_delivery_date:
+                purchase_order = po_table.get_item(
+                    Key={"client_id": dispatch_item["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})["Item"]
+                items = sum([line["quantity"]
+                            for line in purchase_order["data"]])
+                client = search(clients, "client_id",
+                                dispatch_item["client_id"])
+                new_delivery_date = get_dispatch(items, client, merchant_params["store-coords"], merchant_params["distance-api-key"])[
+                    "estimated_delivery"]
+                dispatch_object["dispatch"]["new_delivery_date"] = new_delivery_date
+
+            response["statusCode"] = 200
+            response["body"] = json.dumps(
+                dispatch_object, default=serialize_float)
+
+        case "POST /merchant/dispatches/{dispatch_id}":
+            dispatch_id = event["pathParameters"]["dispatch_id"]
+            payload = json.loads(event["body"])
+
+            client = search(clients, "client_id", payload["client_id"])
+
+            return_payload = json.dumps(
+                {"status": payload["status"], "estimated_delivery": payload["estimated_delivery"]})
+            hmac_hex = hmac.digest(client["hmac"].encode(), str(
+                return_payload).encode(), digest=hashlib.sha256).hex()
+            headers = {"Authorization": hmac_hex}
+
+            dispatch_update = requests.patch(
+                client["callback"]+"/api/merchant/shipment-orders/%s" % dispatch_id, headers=headers, data=return_payload)
+
+            if dispatch_update.status_code != 200:
+                raise Exception(
+                    "there was an error returning a dispatch order to the client")
+
+            dispatch_item = dispatch_table.get_item(
+                Key={"dispatch_id": dispatch_id})["Item"]
+
+            if dispatch_item["estimated_delivery"] != payload["estimated_delivery"]:
+                dispatch_item["estimated_delivery"] = payload["estimated_delivery"]
+
+                purchase_order = po_table.get_item(
+                    Key={"client_id": payload["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})["Item"]
+                purchase_order["estimated_delivery"] = payload["estimated_delivery"]
+                purchase_order["modified"] = datetime.now(
+                    timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+                po_table.put_item(Item=purchase_order)
+
+            dispatch_item["status"] = payload["status"] = payload["status"]
+            dispatch_table.put_item(Item=dispatch_item)
+
+            response["statusCode"] = 200
+            response["body"] = json.dumps(
+                {"message": "dispatch %s updated at the clients server" % dispatch_id}, default=serialize_float)
+
+        case _:
+            raise Exception("no matching resource")
 
     return response
