@@ -7,7 +7,7 @@ import requests
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, date
 
-class HMACxception(Exception):
+class HMACException(Exception):
     pass
 
 def serialize_float(obj):
@@ -18,7 +18,7 @@ def check_hmac(payload, request_hmac, hmac_key):
     correct_hmac = hmac.digest(hmac_key.encode(
     ), payload.encode(), digest=hashlib.sha256).hex()
     if not hmac.compare_digest(request_hmac, correct_hmac):
-        raise HMACxception("invalid credentials")
+        raise HMACException("invalid credentials")
 
 
 def search(dicts, key, value):

@@ -3,7 +3,7 @@ import json
 import boto3
 import traceback
 
-from utils import check_hmac, get_dispatch, search, HMACxception
+from utils import check_hmac, get_dispatch, search, HMACException
 
 from functools import wraps
 from decimal import Decimal
@@ -32,7 +32,7 @@ def validate(function):
                 response["body"] = json.dumps({"message": "no body in request"})
                 return response
         
-        except HMACxception:
+        except HMACException:
             print("hmacced yall")
             response["statusCode"] = 401
             response["body"] = json.dumps({"message": "invalid credentials"})
@@ -124,6 +124,7 @@ def handler(event, context, route_key, response):
                 {"message": "purchase order %s received" % payload["purchase_order_id"]})
 
         case "GET /client/dispatch-cost":
+            raise HMACException("asdasd")
             client = search(clients, "client_id",
                             event["queryStringParameters"]["client_id"])
             check_hmac(str(event["queryStringParameters"]),
