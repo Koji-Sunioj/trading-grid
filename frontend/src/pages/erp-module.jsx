@@ -1,8 +1,10 @@
-import { determineHeaders } from "../utils/utils";
+import { determineHeaders, Fetcher } from "../utils/utils";
+
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams, Link } from "react-router";
+import { useParams, useSearchParams, Link, useNavigate } from "react-router";
 
 export const ERP = () => {
+  const navigate = useNavigate();
   const { module, client_id } = useParams();
   const [queryParams, setQueryParams] = useSearchParams();
 
@@ -35,18 +37,16 @@ export const ERP = () => {
       endpoint += `&client_id=${client_id}`;
     }
 
-    const response = await fetch(import.meta.env.VITE_API + endpoint, {
-      method: "GET",
-      credentials: "include",
-    });
-    const { status } = response;
+    const fetcher = new Fetcher("GET", import.meta.env.VITE_API + endpoint);
+    await fetcher.execute(navigate);
+    const status = fetcher.status;
 
     switch (module) {
       case "purchase-orders":
         if (status !== 200) {
           setPurchaseOrders([]);
         } else {
-          const { orders } = await response.json();
+          const { orders } = fetcher.returnBody;
           setPurchaseOrders(orders);
         }
         break;
@@ -54,7 +54,7 @@ export const ERP = () => {
         if (status !== 200) {
           setPurchaseOrders([]);
         } else {
-          const { dispatches } = await response.json();
+          const { dispatches } = fetcher.returnBody;
           setDispatches(dispatches);
         }
         break;

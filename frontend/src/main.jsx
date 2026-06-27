@@ -1,10 +1,13 @@
 import "./index.css";
 import "bulma/css/bulma.min.css";
 
+import { Fetcher } from "./utils/utils";
+
 import { NavBar } from "./navbar";
 import { SignIn } from "./pages/sign-in";
 import { ERP } from "./pages/erp-module";
 import { Unathorized } from "./pages/403";
+import { NotFound } from "./pages/404";
 import { LandingPage } from "./pages/landing-page";
 import { RoutingTable } from "./pages/manage-clients";
 import { DispatchRequest } from "./pages/dispatch-request";
@@ -12,7 +15,7 @@ import { PurchaseOrder } from "./pages/purchase-order";
 
 import ReactDOM from "react-dom/client";
 import { React, createContext, useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router";
 
 export const UserContext = createContext(null);
 
@@ -26,16 +29,14 @@ const App = () => {
   useEffect(() => {
     authorized.state === null &&
       (async () => {
-        const response = await fetch(import.meta.env.VITE_API + `/auth`, {
-          method: "GET",
-          credentials: "include",
-        });
-        const { status } = response;
+        const fetcher = new Fetcher("GET", import.meta.env.VITE_API + `/auth`);
+        await fetcher.execute();
+        const status = fetcher.status;
 
         if (status !== 200) {
           setAuthorized({ message: "unathorized", state: false, user: null });
         } else {
-          const { user } = await response.json();
+          const { user } = fetcher.returnBody;
           setAuthorized({ message: "authorized", state: true, user: user });
         }
       })();
@@ -65,7 +66,8 @@ const App = () => {
               />
             </>
           )}
-          <Route path="*" element={<Unathorized />} />
+          {!authorized.state && <Route path="*" element={<Unathorized />} />}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </UserContext.Provider>

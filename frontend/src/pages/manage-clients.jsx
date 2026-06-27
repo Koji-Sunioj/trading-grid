@@ -1,6 +1,10 @@
+import { Fetcher } from "../utils/utils";
+
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 
 export const RoutingTable = () => {
+  const navigate = useNavigate();
   const [clients, setClients] = useState(null);
   const [UIState, setUIState] = useState({ loading: false, message: null });
 
@@ -12,20 +16,18 @@ export const RoutingTable = () => {
 
   const fetchClients = async (message) => {
     setUIState({ loading: true, message: message });
-    const response = await fetch(
-      import.meta.env.VITE_API + "/merchant/routing-table",
-      {
-        method: "GET",
-        credentials: "include",
-      }
-    );
 
-    const { status } = response;
+    const fetcher = new Fetcher(
+      "GET",
+      import.meta.env.VITE_API + `/merchant/routing-table`
+    );
+    await fetcher.execute(navigate);
+    const status = fetcher.status;
 
     if (status !== 200) {
       setClients([]);
     } else {
-      const { clients } = await response.json();
+      const { clients } = fetcher.returnBody;
       setClients(clients);
     }
     setUIState({ loading: false, message: message });
@@ -43,25 +45,22 @@ export const RoutingTable = () => {
       },
     } = event;
 
-    const response = await fetch(
-      import.meta.env.VITE_API + "/merchant/routing-table",
-      {
-        method: "POST",
-        credentials: "include",
-        body: JSON.stringify({
-          client_id: client_id,
-          callback: callback,
-          hmac: hmac,
-          address: address,
-        }),
-        headers: {
-          "Content-Type": "text/plain",
-        },
-      }
-    );
+    const payload = JSON.stringify({
+      client_id: client_id,
+      callback: callback,
+      hmac: hmac,
+      address: address,
+    });
 
-    const { status } = response;
-    const { message } = await response.json();
+    const fetcher = new Fetcher(
+      "POST",
+      import.meta.env.VITE_API + "/merchant/routing-table",
+      payload
+    );
+    await fetcher.execute(navigate);
+    const status = fetcher.status;
+    const { message } = fetcher.returnBody;
+
     if (status === 200) {
       fetchClients("refreshing data...");
     }
@@ -70,15 +69,14 @@ export const RoutingTable = () => {
 
   const deleteClient = async (client_id) => {
     setUIState({ loading: true, message: `deleting client id ${client_id}` });
-    const response = await fetch(
-      import.meta.env.VITE_API + `/merchant/routing-table/${client_id}`,
-      {
-        method: "DELETE",
-        credentials: "include",
-      }
+    const fetcher = new Fetcher(
+      "DELETE",
+      import.meta.env.VITE_API + `/merchant/routing-table/${client_id}`
     );
-    const { status } = response;
-    const { message } = await response.json();
+    await fetcher.execute(navigate);
+    const status = fetcher.status;
+    const { message } = fetcher.returnBody;
+
     if (status === 200) {
       fetchClients("refreshing data...");
     }

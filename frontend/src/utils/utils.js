@@ -1,5 +1,3 @@
-//placeholder
-
 export const determineHeaders = (module) => {
   if (module === "purchase-orders") {
     return [
@@ -39,10 +37,41 @@ export const determineNextAction = (dispatchRequest) => {
     return "rescheduled";
   } else if (
     deliveryDate.toISOString().substring(0, 10) ===
-    now.toISOString().substring(0, 10) && !isShipped
+      now.toISOString().substring(0, 10) &&
+    !isShipped
   ) {
     return "shipped";
   } else {
     return "no action";
   }
 };
+
+export class Fetcher {
+  constructor(method, url, payload = null, status = null, returnBody = null) {
+    this.method = method;
+    this.url = url;
+    this.payload = payload;
+  }
+
+  async execute(navigate = null) {
+    const params = {
+      method: this.method,
+      credentials: "include",
+    };
+
+    if (this.payload !== null) {
+      params.body = this.payload;
+    }
+
+    const response = await fetch(this.url, params);
+    const { status } = response;
+    this.status = status;
+
+    if (this.status === 200 || this.status === 400) {
+      this.returnBody = await response.json();
+    } else if (this.status === 401 && navigate !== null) {
+      alert("your credentials have expired. please login again");
+      navigate("/");
+    }
+  }
+}

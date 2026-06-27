@@ -1,9 +1,10 @@
-import { determineNextAction } from "../utils/utils";
+import { Fetcher, determineNextAction } from "../utils/utils";
 
-import { useParams } from "react-router";
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router";
 
 export const DispatchRequest = () => {
+  const navigate = useNavigate();
   const { dispatch_id } = useParams();
   const [dispatchRequest, setDispatchRequest] = useState(null);
   const [UIState, setUIState] = useState({ loading: false });
@@ -15,18 +16,17 @@ export const DispatchRequest = () => {
   const getDispatch = async (dispatch_id) => {
     setUIState({ loading: true });
 
-    const response = await fetch(
-      import.meta.env.VITE_API + `/merchant/dispatches/${dispatch_id}`,
-      {
-        credentials: "include",
-      }
+    const fetcher = new Fetcher(
+      "GET",
+      import.meta.env.VITE_API + `/merchant/dispatches/${dispatch_id}`
     );
-    const { status } = response;
+    await fetcher.execute(navigate);
+    const status = fetcher.status;
 
     if (status !== 200) {
       setDispatchRequest({});
     } else {
-      const { dispatch } = await response.json();
+      const { dispatch } = fetcher.returnBody;
       setDispatchRequest(dispatch);
     }
 
@@ -49,20 +49,20 @@ export const DispatchRequest = () => {
       },
     } = event;
 
-    const response = await fetch(
-      import.meta.env.VITE_API + `/merchant/dispatches/${dispatch_id}`,
-      {
-        credentials: "include",
-        method: "POST",
-        body: JSON.stringify({
-          estimated_delivery: delivery,
-          status: next_status,
-          client_id: dispatchRequest.client_id,
-        }),
-      }
-    );
+    const payload = JSON.stringify({
+      estimated_delivery: delivery,
+      status: next_status,
+      client_id: dispatchRequest.client_id,
+    });
 
-    const { message } = await response.json();
+    const fetcher = new Fetcher(
+      "POST",
+      import.meta.env.VITE_API + `/merchant/dispatches/${dispatch_id}`,
+      payload
+    );
+    await fetcher.execute(navigate);
+    const { message } = fetcher.returnBody;
+
     alert(message);
     getDispatch(dispatch_id);
     setUIState({ loading: false });

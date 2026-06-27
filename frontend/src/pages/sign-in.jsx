@@ -1,3 +1,5 @@
+import { Fetcher } from "../utils/utils";
+
 import { useContext } from "react";
 import { UserContext } from "../main";
 import { Link, useNavigate } from "react-router";
@@ -18,17 +20,19 @@ export const SignIn = () => {
       },
     } = event;
 
-    const response = await fetch(import.meta.env.VITE_API + "/auth", {
-      method: "POST",
-      credentials: "include",
-      body: JSON.stringify({
-        username: username,
-        password: password,
-      }),
+    const payload = JSON.stringify({
+      username: username,
+      password: password,
     });
+    const fetcher = new Fetcher(
+      "POST",
+      import.meta.env.VITE_API + "/auth",
+      payload
+    );
+    await fetcher.execute();
+    const status = fetcher.status;
+    const { message, user } = fetcher.returnBody;
 
-    const { status } = response;
-    const { message, user } = await response.json();
     alert(message);
     if (status === 200) {
       setAuthorized({ message: "authorized", state: true, user: user });

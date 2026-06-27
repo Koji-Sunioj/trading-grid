@@ -1,7 +1,10 @@
+import { Fetcher } from "../utils/utils";
+
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, useNavigate } from "react-router";
 
 export const PurchaseOrder = () => {
+  const navigate = useNavigate();
   const { purchase_order, client_id } = useParams();
   const [purchaseOrder, setPurchaseOrder] = useState(null);
   const [UIState, setUIState] = useState({ loading: false });
@@ -23,21 +26,19 @@ export const PurchaseOrder = () => {
 
   const fetchOrder = async () => {
     setUIState({ loading: true });
-    const response = await fetch(
-      import.meta.env.VITE_API +
-        `/merchant/purchase-orders/${client_id}/${purchase_order}`,
-      {
-        method: "GET",
-        credentials: "include",
-      }
-    );
 
-    const { status } = response;
+    const fetcher = new Fetcher(
+      "GET",
+      import.meta.env.VITE_API +
+        `/merchant/purchase-orders/${client_id}/${purchase_order}`
+    );
+    await fetcher.execute(navigate);
+    const status = fetcher.status;
+
     if (status !== 200) {
       setPurchaseOrder({});
-      alert("asd");
     } else {
-      const { purchase_order } = await response.json();
+      const { purchase_order } = fetcher.returnBody;
       setPurchaseOrder(purchase_order);
     }
     setUIState({ loading: false });
@@ -70,16 +71,14 @@ export const PurchaseOrder = () => {
       });
     });
 
-    const response = await fetch(
+    const fetcher = new Fetcher(
+      "POST",
       import.meta.env.VITE_API +
         `/merchant/purchase-orders/${client_id}/${purchase_order}`,
-      {
-        method: "POST",
-        credentials: "include",
-        body: JSON.stringify(payload),
-      }
+      JSON.stringify(payload)
     );
-    const { status } = response;
+    await fetcher.execute(navigate);
+    const status = fetcher.status;
 
     if (status === 200) {
       alert(
@@ -87,7 +86,7 @@ export const PurchaseOrder = () => {
       );
       fetchOrder();
     } else {
-      const { message } = await response.json();
+      const { message } = fetcher.returnBody;
       alert(message);
     }
 
