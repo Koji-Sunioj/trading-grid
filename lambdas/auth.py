@@ -4,6 +4,9 @@ import boto3
 import traceback
 import datetime
 
+from models import User
+import pydantic
+
 response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
 
@@ -31,6 +34,7 @@ def handler(event, context):
             case "POST /auth":
                 if event["body"] != None:
                     body = json.loads(event["body"])
+                    User.model_validate(body)
                 else:
                     raise Exception("there was no body in request")
 
@@ -65,6 +69,8 @@ def handler(event, context):
                 error_message = "invalid username or password"
             case "Exception":
                 error_message = error.__str__()
+            case "ValidationError":
+                error_message = "server payload did not match schema for the requested resource"    
 
         response['statusCode'] = 400
         response["body"] = json.dumps({"message": error_message})
