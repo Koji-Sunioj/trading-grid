@@ -67,8 +67,15 @@ export class Fetcher {
     const { status } = response;
     this.status = status;
 
-    if (this.status === 200 || this.status === 400) {
+    if (this.status === 200) {
       this.returnBody = await response.json();
+    } else if (this.status === 400) {
+      this.returnBody = await response.json();
+      if (this.returnBody.hasOwnProperty("message")) {
+        alert(this.returnBody.message);
+      } else {
+        alert("server error occurred.")
+      }
     } else if (this.status === 401 && navigate !== null) {
       alert("your credentials have expired. please login again");
       navigate("/");

@@ -44,7 +44,7 @@ export const ERP = () => {
     switch (module) {
       case "purchase-orders":
         if (status !== 200) {
-          setPurchaseOrders([]);
+          setPurchaseOrders([]);          
         } else {
           const { orders } = fetcher.returnBody;
           setPurchaseOrders(orders);
