@@ -234,13 +234,10 @@ def handler(event, context, route_key, response):
                 Key={"dispatch_id": dispatch_id})["Item"]
 
             current_delivery_date = datetime.strptime(
-                dispatch_item["estimated_delivery"], "%Y-%m-%d %H:%M")
+                dispatch_item["estimated_delivery"], "%Y-%m-%d %H:%M").replace(tzinfo=ZoneInfo("Europe/Helsinki"))
+
             now = datetime.now(ZoneInfo("Europe/Helsinki"))
             dispatch_object = {"dispatch": dispatch_item}
-
-            print(now)
-            print(current_delivery_date)
-            print(now > current_delivery_date)
 
             if now > current_delivery_date:
                 purchase_order = po_table.get_item(
