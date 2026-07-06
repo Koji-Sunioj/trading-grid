@@ -7,10 +7,9 @@ import requests
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, date
 
-#testing
-
 class HMACException(Exception):
     pass
+
 
 def serialize_float(obj):
     return float(obj)
