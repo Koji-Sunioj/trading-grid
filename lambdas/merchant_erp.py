@@ -13,7 +13,7 @@ from utils import get_dispatch, serialize_float, search
 from functools import wraps
 from decimal import Context
 from zoneinfo import ZoneInfo
-from datetime import datetime, timezone,  timedelta, date
+from datetime import datetime, timezone
 from boto3.dynamodb.conditions import Attr
 
 dynamodb = boto3.resource('dynamodb')
@@ -235,8 +235,12 @@ def handler(event, context, route_key, response):
 
             current_delivery_date = datetime.strptime(
                 dispatch_item["estimated_delivery"], "%Y-%m-%d %H:%M")
-            now = datetime.now()
+            now = datetime.now(ZoneInfo("Europe/Helsinki"))
             dispatch_object = {"dispatch": dispatch_item}
+
+            print(now)
+            print(current_delivery_date)
+            print(now > current_delivery_date)
 
             if now > current_delivery_date:
                 purchase_order = po_table.get_item(
