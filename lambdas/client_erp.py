@@ -58,6 +58,8 @@ def handler(event, context, route_key, response):
     match route_key:
         case "PUT /client/purchase-orders":
             payload = json.loads(event["body"], parse_float=Decimal)
+            print(payload)
+            raise Exception("hey")
             client = search(clients, "client_id", payload["client_id"])
             check_hmac(event["body"], event["headers"]
                         ["Authorization"], client["hmac"])

@@ -2,10 +2,8 @@ import os
 import json
 import boto3
 import traceback
-import datetime
 
 from models import User
-import pydantic
 
 response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
