@@ -58,8 +58,8 @@ def handler(event, context):
                 raise Exception("no matching resource")
 
     except Exception as error:
+        print("error name %s" % error.__class__.__name__)
         print(traceback.format_exc())
-        print(error)
         error_message = "an error occurred."
 
         match error.__class__.__name__:
