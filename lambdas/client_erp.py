@@ -47,8 +47,6 @@ def validate(function):
             error_message = "an error occurred."
 
             match error.__class__.__name__:
-                case "HMACException":
-                    error_message = "invalid credentials"
                 case "Exception":
                     error_message = error.__str__()
                 case "ValidationError":
@@ -69,6 +67,7 @@ def handler(event, context, route_key, response):
         case "PUT /client/purchase-orders":
             payload = json.loads(event["body"], parse_float=Decimal)
             PurchaseOrder.model_validate(payload)
+            
             client = search(clients, "client_id", payload["client_id"])
             check_hmac(event["body"], event["headers"]
                         ["Authorization"], client["hmac"])
