@@ -64,7 +64,7 @@ def handler(event, context):
 
         match error.__class__.__name__:
             case "NotAuthorizedException" | "UserNotFoundException":
-                error_message = "invalid username or password"
+                error_message = "invalid credentials"
             case "Exception":
                 error_message = error.__str__()
             case "ValidationError":

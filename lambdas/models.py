@@ -24,8 +24,6 @@ class PurchaseOrder(BaseModel):
     estimated_delivery: str
     dispatch_cost: Decimal
 
-#{'client_id': 'bm-dev', 'purchase_order_id': 117, 
-# 'status': 'pending-supplier', 'modified': '2026-07-09 20:05:06', 'data': 
-# [{'line': 1, 'artist_id': 102, 'artist': 'Corpus Christii', 
-#   'album_id': 1002, 'album': 'Rising', 'quantity': 1, 'line_total': Decimal('6.53')}], 
-# 'estimated_delivery': '2026-07-13 12:30', 'dispatch_cost': Decimal('0.98')}
+class DispatchUpdate:
+    client: str
+    status: Literal['received','pending-supplier','shipped','rescheduled']

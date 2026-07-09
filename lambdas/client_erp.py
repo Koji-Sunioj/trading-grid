@@ -3,7 +3,7 @@ import json
 import boto3
 import traceback
 
-from models import PurchaseOrder
+from models import PurchaseOrder, DispatchUpdate
 from utils import check_hmac, get_dispatch, search, HMACException
 
 from functools import wraps
@@ -67,7 +67,7 @@ def handler(event, context, route_key, response):
         case "PUT /client/purchase-orders":
             payload = json.loads(event["body"], parse_float=Decimal)
             PurchaseOrder.model_validate(payload)
-            
+
             client = search(clients, "client_id", payload["client_id"])
             check_hmac(event["body"], event["headers"]
                         ["Authorization"], client["hmac"])
@@ -148,6 +148,8 @@ def handler(event, context, route_key, response):
 
         case "PATCH /client/dispatches/{dispatch_id}":
             payload = json.loads(event["body"])
+            DispatchUpdate.model_validate(payload)
+
             dispatch_id = event["pathParameters"]["dispatch_id"]
 
             client = search(clients, "client_id", payload["client_id"])
