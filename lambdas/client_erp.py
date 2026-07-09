@@ -3,6 +3,7 @@ import json
 import boto3
 import traceback
 
+from models import PurchaseOrder
 from utils import check_hmac, get_dispatch, search, HMACException
 
 from functools import wraps
@@ -47,6 +48,7 @@ def validate(function):
 
             response['statusCode'] = 400
             response["body"] = json.dumps({"message": error_message})
+            return response
 
     return lambda_request
 
@@ -58,6 +60,7 @@ def handler(event, context, route_key, response):
     match route_key:
         case "PUT /client/purchase-orders":
             payload = json.loads(event["body"], parse_float=Decimal)
+            PurchaseOrder.model_validate(payload)
             print(payload)
             raise Exception("hey")
             client = search(clients, "client_id", payload["client_id"])
