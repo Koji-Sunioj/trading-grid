@@ -24,11 +24,11 @@ class PurchaseOrder(BaseModel):
     estimated_delivery: str
     dispatch_cost: Decimal
 
-class DispatchUpdate:
+class DispatchUpdate(BaseModel):
     client: str
     status: Literal['received','pending-supplier','shipped','rescheduled']
 
-class Client:
+class Client(BaseModel):
     client_id: str
     callback: str
     hmac: str
