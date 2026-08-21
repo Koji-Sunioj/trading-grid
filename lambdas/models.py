@@ -33,3 +33,13 @@ class Client(BaseModel):
     callback: str
     hmac: str
     address: str
+
+class PurchaseOrderAmmendmentLine(BaseModel):
+    album_id: int
+    confirmed: int
+    line: int
+
+class PurchaseOrderAmmendment(BaseModel):
+    purchase_order_id: int
+    client_id: str
+    lines: List[PurchaseOrderAmmendmentLine]
