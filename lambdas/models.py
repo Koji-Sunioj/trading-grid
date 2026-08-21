@@ -43,3 +43,8 @@ class PurchaseOrderAmmendment(BaseModel):
     purchase_order_id: int
     client_id: str
     lines: List[PurchaseOrderAmmendmentLine]
+
+class DispatchUpdateAmmendment(BaseModel):
+    estimated_delivery: str
+    status: str
+    client_id: str

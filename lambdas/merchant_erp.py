@@ -8,12 +8,13 @@ import datetime
 import requests
 import traceback
 
+from models import Client, PurchaseOrderAmmendment, DispatchUpdateAmmendment
 from utils import get_dispatch, serialize_float, search
-from models import Client
 
 from functools import wraps
 from decimal import Context
 from zoneinfo import ZoneInfo
+from urllib.parse import unquote
 from datetime import datetime, timezone
 from boto3.dynamodb.conditions import Attr
 
@@ -104,7 +105,7 @@ def handler(event, context, route_key, response):
 
         case "DELETE /merchant/routing-table/{client_id}":
             routing_table.delete_item(
-                Key={"client_id": event["pathParameters"]["client_id"]})
+                Key={"client_id": unquote(event["pathParameters"]["client_id"])})
 
             response["statusCode"] = 200
             response["body"] = json.dumps(
@@ -159,6 +160,7 @@ def handler(event, context, route_key, response):
                 raise Exception("this purchase order is completed")
 
             payload = json.loads(event["body"])
+            PurchaseOrderAmmendment.model_validate(payload)
             ammendments_table.put_item(Item=payload)
 
             confirmed_lines = []
@@ -259,6 +261,7 @@ def handler(event, context, route_key, response):
         case "POST /merchant/dispatches/{dispatch_id}":
             dispatch_id = event["pathParameters"]["dispatch_id"]
             payload = json.loads(event["body"])
+            DispatchUpdateAmmendment.model_validate(payload)
 
             client = search(clients, "client_id", payload["client_id"])
 
