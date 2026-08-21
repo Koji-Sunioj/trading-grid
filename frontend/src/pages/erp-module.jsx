@@ -1,4 +1,4 @@
-import { determineHeaders, Fetcher } from "../utils/utils";
+import { determineHeaders,determineNextAction, Fetcher } from "../utils/utils";
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router";
@@ -122,6 +122,9 @@ export const ERP = () => {
                   status,
                   address,
                 } = dispatch;
+
+                const highlightShippable = determineNextAction(estimated_delivery,status) === "shipped"
+
                 return (
                   <tr key={dispatch_id}>
                     <td>
@@ -142,7 +145,7 @@ export const ERP = () => {
                     </td>
                     <td>{client_id}</td>
                     <td>{estimated_delivery}</td>
-                    <td>{status}</td>
+                    <td style={{color:highlightShippable ? "red" : "white"}}>{status}</td>
                     <td>{address}</td>
                   </tr>
                 );

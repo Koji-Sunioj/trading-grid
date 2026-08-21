@@ -14,8 +14,8 @@ export const determineHeaders = (module) => {
       "purchase_order",
       "client_id",
       "estimated_delivery",
-      "address",
       "status",
+      "address",
     ];
   }
 };
@@ -26,18 +26,19 @@ export const checkDeliveryDate = (date) => {
   return deliveryDate < today ? { color: "red" } : null;
 };
 
-export const determineNextAction = (dispatchRequest) => {
-  const { estimated_delivery } = dispatchRequest;
+export const determineNextAction = (estimated_delivery, status) => {
   const deliveryDate = new Date(estimated_delivery);
   const now = new Date();
 
-  const isShipped = dispatchRequest.status === "received";
+  const isShipped = status === "received";
 
   if (now > deliveryDate && !isShipped) {
     return "rescheduled";
   } else if (
     deliveryDate.toISOString().substring(0, 10) ===
       now.toISOString().substring(0, 10) &&
+    deliveryDate.getHours() <= now.getHours() &&
+    deliveryDate.getMinutes() <= now.getMinutes() &&
     !isShipped
   ) {
     return "shipped";
@@ -67,13 +68,15 @@ export class Fetcher {
     const { status } = response;
     this.status = status;
 
-    console.log(this.status)
+    console.log(this.status);
 
     if (this.status === 200) {
       this.returnBody = await response.json();
     } else if (this.status === 400) {
       this.returnBody = await response.json();
-      this.returnBody.hasOwnProperty("message") ? alert(this.returnBody.message) :  alert("server error occurred."); 
+      this.returnBody.hasOwnProperty("message")
+        ? alert(this.returnBody.message)
+        : alert("server error occurred.");
     } else if (this.status === 401 && navigate !== null) {
       alert("your credentials have expired. please login again");
       navigate("/");

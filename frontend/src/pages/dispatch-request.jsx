@@ -36,7 +36,7 @@ export const DispatchRequest = () => {
   const nextAction =
     dispatchRequest !== null &&
     dispatchRequest.hasOwnProperty("estimated_delivery")
-      ? determineNextAction(dispatchRequest)
+      ? determineNextAction(dispatchRequest.estimated_delivery,dispatchRequest.status)
       : null;
 
   const sendDispatchUpdate = async (event) => {
