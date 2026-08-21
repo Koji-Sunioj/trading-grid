@@ -67,6 +67,8 @@ export class Fetcher {
     const { status } = response;
     this.status = status;
 
+    console.log(this.status)
+
     if (this.status === 200) {
       this.returnBody = await response.json();
     } else if (this.status === 400) {

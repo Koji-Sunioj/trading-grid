@@ -27,3 +27,9 @@ class PurchaseOrder(BaseModel):
 class DispatchUpdate:
     client: str
     status: Literal['received','pending-supplier','shipped','rescheduled']
+
+class Client:
+    client_id: str
+    callback: str
+    hmac: str
+    address: str

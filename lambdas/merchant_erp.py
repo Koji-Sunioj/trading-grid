@@ -9,6 +9,7 @@ import requests
 import traceback
 
 from utils import get_dispatch, serialize_float, search
+from models import Client
 
 from functools import wraps
 from decimal import Context
@@ -80,6 +81,7 @@ def handler(event, context, route_key, response):
 
         case "POST /merchant/routing-table":
             payload = json.loads(event["body"])
+            Client.model_validate(payload)
 
             address_lookup = requests.get(
                 "https://api.radar.io/v1/geocode/forward?query=%s" % payload["address"], headers={"Authorization": merchant_params["distance-api-key"]})

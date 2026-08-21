@@ -4,6 +4,7 @@ import boto3
 import traceback
 
 from models import User
+from utils import NoCookieException
 
 response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
@@ -21,7 +22,7 @@ def handler(event, context):
         match route_key:
             case "GET /auth":
                 if "Cookie" not in event["headers"]:
-                    raise Exception("please log in again")
+                    raise NoCookieException("please log in again")
 
                 token = event["headers"]["Cookie"].split("=")[1]
                 cognito_response = cognito.get_user(AccessToken=token)
@@ -61,16 +62,17 @@ def handler(event, context):
         print("error name %s" % error.__class__.__name__)
         print(traceback.format_exc())
         error_message = "an error occurred."
+        response['statusCode'] = 400
 
         match error.__class__.__name__:
-            case "NotAuthorizedException" | "UserNotFoundException":
+            case "NotAuthorizedException" | "UserNotFoundException" | "NoCookieException":
                 error_message = "invalid credentials"
+                response['statusCode'] = 401
             case "Exception":
                 error_message = error.__str__()
             case "ValidationError":
                 error_message = "server payload did not match schema for the requested resource"    
 
-        response['statusCode'] = 400
         response["body"] = json.dumps({"message": error_message})
 
     return response
