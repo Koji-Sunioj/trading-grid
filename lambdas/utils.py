@@ -10,6 +10,8 @@ from datetime import datetime, timedelta, date
 class HMACException(Exception):
     pass
 
+class NoCookieException(Exception):
+    pass
 
 def serialize_float(obj):
     return float(obj)

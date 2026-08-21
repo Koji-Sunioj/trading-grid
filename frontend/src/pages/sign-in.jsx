@@ -80,9 +80,6 @@ export const SignIn = () => {
               </div>
             </fieldset>
           </form>
-          <Link to={{ pathname: "/sign-up" }}>
-            Don't have an account? Sign up
-          </Link>
         </div>
       </div>
     </div>
