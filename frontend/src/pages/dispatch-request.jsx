@@ -36,7 +36,10 @@ export const DispatchRequest = () => {
   const nextAction =
     dispatchRequest !== null &&
     dispatchRequest.hasOwnProperty("estimated_delivery")
-      ? determineNextAction(dispatchRequest.estimated_delivery,dispatchRequest.status)
+      ? determineNextAction(
+          dispatchRequest.estimated_delivery,
+          dispatchRequest.status
+        )
       : null;
 
   const sendDispatchUpdate = async (event) => {
@@ -46,16 +49,20 @@ export const DispatchRequest = () => {
       target: {
         delivery: { value: delivery },
         next_status: { value: next_status },
+        new_delivery: {value: new_delivery}
       },
     } = event;
 
     const payload = JSON.stringify({
       estimated_delivery: delivery,
+      new_delivery: new_delivery,
       status: next_status,
       client_id: dispatchRequest.client_id,
     });
 
-    const fetcher = new Fetcher(
+    console.log(payload)
+
+    /* const fetcher = new Fetcher(
       "POST",
       import.meta.env.VITE_API + `/merchant/dispatches/${dispatch_id}`,
       payload
@@ -65,8 +72,11 @@ export const DispatchRequest = () => {
 
     alert(message);
     getDispatch(dispatch_id);
-    setUIState({ loading: false });
+    setUIState({ loading: false }); */
   };
+
+  const hasNewDeliveryDate =
+    dispatchRequest.hasOwnProperty("new_delivery_date");
 
   return (
     <div>
@@ -104,15 +114,30 @@ export const DispatchRequest = () => {
                       className="input"
                       type="text"
                       name="delivery"
-                      value={
-                        dispatchRequest.hasOwnProperty("new_delivery_date")
-                          ? dispatchRequest.new_delivery_date
-                          : dispatchRequest.estimated_delivery
-                      }
+                      value={dispatchRequest.estimated_delivery}
                       style={{ textAlign: "center" }}
                       disabled
                     ></input>
                   </p>
+                </div>
+                <div style={{display: hasNewDeliveryDate ? "block":"none" }}>
+                  <label class="label">new delivery date</label>
+                  <div className="field">
+                    <p className="control">
+                      <input
+                        className="input"
+                        type="text"
+                        name="new_delivery"
+                        value={
+                          hasNewDeliveryDate
+                            ? dispatchRequest.new_delivery_date
+                            : null
+                        }
+                        style={{ textAlign: "center" }}
+                        disabled
+                      ></input>
+                    </p>
+                  </div>
                 </div>
                 <label class="label">next status</label>
                 <div className="field">
@@ -138,9 +163,9 @@ export const DispatchRequest = () => {
                   <article class="message is-danger mt-2">
                     <div class="message-body">
                       This dispatch must be rescheduled since old date{" "}
-                      {dispatchRequest.estimated_delivery} is past due. when you
-                      submit this request, the new date will be saved and
-                      updated at the client.
+                      {dispatchRequest.estimated_delivery} is past due. The next
+                      when you submit this request, the new date will be saved
+                      and updated at the client.
                     </div>
                   </article>
                 )}

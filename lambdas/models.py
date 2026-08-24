@@ -1,5 +1,5 @@
 from decimal import Decimal
-from pydantic import BaseModel
+from pydantic import BaseModel, Optional
 from typing import Literal, List
 
 class User(BaseModel):
@@ -46,5 +46,6 @@ class PurchaseOrderAmmendment(BaseModel):
 
 class DispatchUpdateAmmendment(BaseModel):
     estimated_delivery: str
+    new_delivery: str | None = None
     status: str
     client_id: str

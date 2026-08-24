@@ -26,6 +26,7 @@ ammendments_table = dynamodb.Table(
     os.environ.get("PO_AMMENDMENT_TABLE"))
 merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
 
+
 def validate(function):
     @wraps(function)
     def lambda_request(*args):
@@ -40,14 +41,15 @@ def validate(function):
                 cognito = boto3.client("cognito-idp")
                 token = event["headers"]["Cookie"].split("=")[1]
                 cognito.get_user(AccessToken=token)
-                
+
             if "Origin" in event["headers"]:
-                response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]    
+                response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
                 response["headers"]["Access-Control-Allow-Credentials"] = "true"
 
             if event["httpMethod"] in ["POST", "PUT"] and event["body"] == None:
                 response["statusCode"] = 400
-                response["body"] = json.dumps({"message": "no body in request"})
+                response["body"] = json.dumps(
+                    {"message": "no body in request"})
                 return response
 
             executed = function(*args, route_key, response)
@@ -66,7 +68,7 @@ def validate(function):
             response['statusCode'] = 400
             response["body"] = json.dumps({"message": error_message})
             return response
-        
+
     return lambda_request
 
 
@@ -200,7 +202,7 @@ def handler(event, context, route_key, response):
                 dispatch_uuid = str(uuid.uuid4())
 
                 dispatch_item = {"dispatch_id": dispatch_uuid, "purchase_order": purchase_order_id,
-                                "status": "pending-supplier", "address": client["address"], "client_id": client_id, "estimated_delivery": purchase_order["estimated_delivery"]}
+                                 "status": "pending-supplier", "address": client["address"], "client_id": client_id, "estimated_delivery": purchase_order["estimated_delivery"]}
                 dispatch_table.put_item(Item=dispatch_item)
                 dispatch_payload = json.dumps(dispatch_item)
 
@@ -212,7 +214,8 @@ def handler(event, context, route_key, response):
                     client["callback"] + "/api/merchant/shipment-orders", data=dispatch_payload, headers=headers)
 
                 if dispatch_request.status_code != 200:
-                    raise Exception("dispatch triggered since confirmed lines equals requested quantity. however, there was an error returning a dispatch order to the client")
+                    raise Exception(
+                        "dispatch triggered since confirmed lines equals requested quantity. however, there was an error returning a dispatch order to the client")
 
             response["statusCode"] = 200
             response["body"] = json.dumps({"message": message})
@@ -263,10 +266,32 @@ def handler(event, context, route_key, response):
             payload = json.loads(event["body"])
             DispatchUpdateAmmendment.model_validate(payload)
 
+            print(payload)
+
+            delivery_date = payload["estimated_delivery"]
+
+            dispatch_item = dispatch_table.get_item(
+                Key={"dispatch_id": dispatch_id})["Item"]
+
+            if payload["new_delivery"] != None:
+                delivery_date = payload["new_delivery"]
+                dispatch_item["estimated_delivery"] = delivery_date
+
+                purchase_order = po_table.get_item(
+                    Key={"client_id": payload["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})["Item"]
+                purchase_order["estimated_delivery"] = delivery_date
+                purchase_order["modified"] = datetime.now(
+                    timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+                po_table.put_item(Item=purchase_order)
+
+            dispatch_item["status"] = payload["status"]
+            dispatch_table.put_item(Item=dispatch_item)
+
             client = search(clients, "client_id", payload["client_id"])
 
             return_payload = json.dumps(
-                {"status": payload["status"], "estimated_delivery": payload["estimated_delivery"]})
+                {"status": payload["status"], "estimated_delivery": delivery_date})
             hmac_hex = hmac.digest(client["hmac"].encode(), str(
                 return_payload).encode(), digest=hashlib.sha256).hex()
             headers = {"Authorization": hmac_hex}
@@ -277,23 +302,6 @@ def handler(event, context, route_key, response):
             if dispatch_update.status_code != 200:
                 raise Exception(
                     "there was an error returning a dispatch order to the client")
-
-            dispatch_item = dispatch_table.get_item(
-                Key={"dispatch_id": dispatch_id})["Item"]
-
-            if dispatch_item["estimated_delivery"] != payload["estimated_delivery"]:
-                dispatch_item["estimated_delivery"] = payload["estimated_delivery"]
-
-                purchase_order = po_table.get_item(
-                    Key={"client_id": payload["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})["Item"]
-                purchase_order["estimated_delivery"] = payload["estimated_delivery"]
-                purchase_order["modified"] = datetime.now(
-                    timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-
-                po_table.put_item(Item=purchase_order)
-
-            dispatch_item["status"] = payload["status"] = payload["status"]
-            dispatch_table.put_item(Item=dispatch_item)
 
             response["statusCode"] = 200
             response["body"] = json.dumps(

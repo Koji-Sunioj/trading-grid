@@ -37,8 +37,8 @@ export const determineNextAction = (estimated_delivery, status) => {
   } else if (
     deliveryDate.toISOString().substring(0, 10) ===
       now.toISOString().substring(0, 10) &&
-    deliveryDate.getHours() <= now.getHours() &&
-    deliveryDate.getMinutes() <= now.getMinutes() &&
+    now.getHours() <= deliveryDate.getHours() &&
+    now.getMinutes() <= deliveryDate.getMinutes() &&
     !isShipped
   ) {
     return "shipped";
@@ -67,9 +67,7 @@ export class Fetcher {
     const response = await fetch(this.url, params);
     const { status } = response;
     this.status = status;
-
-    console.log(this.status);
-
+    
     if (this.status === 200) {
       this.returnBody = await response.json();
     } else if (this.status === 400) {
