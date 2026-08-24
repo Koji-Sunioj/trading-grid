@@ -1,5 +1,5 @@
 from decimal import Decimal
-from pydantic import BaseModel, Optional
+from pydantic import BaseModel
 from typing import Literal, List
 
 class User(BaseModel):
