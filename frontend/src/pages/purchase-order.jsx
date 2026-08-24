@@ -81,9 +81,6 @@ export const PurchaseOrder = () => {
     const status = fetcher.status;
 
     if (status === 200) {
-      alert(
-        `purchase order ${purchase_order} has been updated at ${client_id}'s server`
-      );
       fetchOrder();
     } 
     setUIState({ loading: false });

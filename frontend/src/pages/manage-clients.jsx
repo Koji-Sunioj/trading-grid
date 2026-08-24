@@ -59,12 +59,10 @@ export const RoutingTable = () => {
     );
     await fetcher.execute(navigate);
     const status = fetcher.status;
-    const { message } = fetcher.returnBody;
 
     if (status === 200) {
       fetchClients("refreshing data...");
     }
-    alert(message);
   };
 
   const deleteClient = async (client_id) => {
@@ -75,13 +73,11 @@ export const RoutingTable = () => {
     );
     await fetcher.execute(navigate);
     const status = fetcher.status;
-    const { message } = fetcher.returnBody;
-
+   
     if (status === 200) {
       fetchClients("refreshing data...");
     }
-    alert(message);
-  };
+   };
 
   return (
     <div>

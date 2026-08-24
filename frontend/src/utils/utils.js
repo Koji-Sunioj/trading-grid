@@ -67,9 +67,16 @@ export class Fetcher {
     const response = await fetch(this.url, params);
     const { status } = response;
     this.status = status;
-    
+
     if (this.status === 200) {
       this.returnBody = await response.json();
+      switch(this.method) {
+        case "DELETE":
+        case "POST":
+          this.returnBody.hasOwnProperty("message")
+        ? alert(this.returnBody.message)
+        : alert("transaction completed successfully"); 
+      }
     } else if (this.status === 400) {
       this.returnBody = await response.json();
       this.returnBody.hasOwnProperty("message")

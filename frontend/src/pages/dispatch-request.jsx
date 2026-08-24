@@ -55,27 +55,25 @@ export const DispatchRequest = () => {
 
     const payload = JSON.stringify({
       estimated_delivery: delivery,
-      new_delivery: new_delivery,
+      new_delivery: new_delivery.length > 0 ? new_delivery : null,
       status: next_status,
       client_id: dispatchRequest.client_id,
     });
 
     console.log(payload)
 
-    /* const fetcher = new Fetcher(
+    const fetcher = new Fetcher(
       "POST",
       import.meta.env.VITE_API + `/merchant/dispatches/${dispatch_id}`,
       payload
     );
     await fetcher.execute(navigate);
-    const { message } = fetcher.returnBody;
 
-    alert(message);
     getDispatch(dispatch_id);
-    setUIState({ loading: false }); */
+    setUIState({ loading: false });
   };
 
-  const hasNewDeliveryDate =
+  const hasNewDeliveryDate = dispatchRequest !== null &&
     dispatchRequest.hasOwnProperty("new_delivery_date");
 
   return (
@@ -130,8 +128,8 @@ export const DispatchRequest = () => {
                         name="new_delivery"
                         value={
                           hasNewDeliveryDate
-                            ? dispatchRequest.new_delivery_date
-                            : null
+                            ?  dispatchRequest.new_delivery_date
+                            :  "" 
                         }
                         style={{ textAlign: "center" }}
                         disabled

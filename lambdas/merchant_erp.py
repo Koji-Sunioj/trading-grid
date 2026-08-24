@@ -265,9 +265,6 @@ def handler(event, context, route_key, response):
             dispatch_id = event["pathParameters"]["dispatch_id"]
             payload = json.loads(event["body"])
             DispatchUpdateAmmendment.model_validate(payload)
-
-            print(payload)
-
             delivery_date = payload["estimated_delivery"]
 
             dispatch_item = dispatch_table.get_item(

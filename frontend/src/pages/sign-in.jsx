@@ -31,9 +31,8 @@ export const SignIn = () => {
     );
     await fetcher.execute();
     const status = fetcher.status;
-    const { message, user } = fetcher.returnBody;
+    const { user } = fetcher.returnBody;
 
-    alert(message);
     if (status === 200) {
       setAuthorized({ message: "authorized", state: true, user: user });
       navigate(`/erp`);
