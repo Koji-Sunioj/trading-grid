@@ -246,7 +246,7 @@ def handler(event, context, route_key, response):
             now = datetime.now(ZoneInfo("Europe/Helsinki"))
             dispatch_object = {"dispatch": dispatch_item}
 
-            if now > current_delivery_date:
+            if now > current_delivery_date and dispatch_item["status"] not in ["shipped","received"]:
                 purchase_order = po_table.get_item(
                     Key={"client_id": dispatch_item["client_id"], "purchase_order_id": dispatch_item["purchase_order"]})["Item"]
                 items = sum([line["quantity"]
