@@ -29,27 +29,7 @@ def handler(event, context):
                 else:
                     raise Exception("i need a name")
                 return {"statusCode": 200}
-
-            case "update":
-                print("hello")
-                #payload = json.loads(event["body"])
-                #if "message" in payload:
-                #    user = table.get_item(Key={"connection_id": connection_id})[
-                #        "Item"]["user"]
-                #
-                #    message = payload["message"]
-                #    api_client = boto3.client("apigatewaymanagementapi", endpoint_url="https://%s/%s" % (
-                #        event["requestContext"]["domainName"], event["requestContext"]["stage"]))
-                #    connections = table.scan()
-                #    connection_ids = [item["connection_id"]
-                #                      for item in connections["Items"]]
-                #
-                #    for connection in connection_ids:
-                #        api_client.post_to_connection(
-                #            Data=json.dumps({"message": message, "user": user}), ConnectionId=connection)
-                #else:
-                #    raise Exception("i need a message")
-                return {"statusCode": 200}
+            
             case "$disconnect":
                 print("hello")
                 #table.delete_item(Key={"connection_id": connection_id})
