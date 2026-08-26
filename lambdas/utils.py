@@ -1,5 +1,6 @@
 import hmac
 import math
+import uuid
 import hashlib
 import datetime
 import requests
@@ -16,6 +17,10 @@ class NoCookieException(Exception):
 def serialize_float(obj):
     return float(obj)
 
+def webssocket_token():
+    ws_token = uuid.uuid4()
+    ws_token_hash = hashlib.sha256(str(ws_token).encode("utf-8")).hexdigest()
+    return {"ws_token": ws_token,"ws_token_hash":ws_token_hash}
 
 def check_hmac(payload, request_hmac, hmac_key):
     correct_hmac = hmac.digest(hmac_key.encode(

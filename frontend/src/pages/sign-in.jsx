@@ -31,10 +31,15 @@ export const SignIn = () => {
     );
     await fetcher.execute();
     const status = fetcher.status;
-    const { user } = fetcher.returnBody;
+    const { user, ws_token } = fetcher.returnBody;
 
     if (status === 200) {
-      setAuthorized({ message: "authorized", state: true, user: user });
+      setAuthorized({
+        message: "authorized",
+        state: true,
+        user: user,
+        ws_token: ws_token,
+      });
       navigate(`/erp`);
     }
     document.getElementById("form-fieldset").disabled = false;

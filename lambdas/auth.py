@@ -1,13 +1,11 @@
 import os
 import json
-import uuid
 import boto3
-import hashlib
 import datetime
 import traceback
 
 from models import User
-from utils import NoCookieException
+from utils import webssocket_token, NoCookieException
 
 response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
@@ -30,7 +28,10 @@ def handler(event, context):
                     raise NoCookieException("please log in again")
 
                 token = event["headers"]["Cookie"].split("=")[1]
+                
                 cognito_response = cognito.get_user(AccessToken=token)
+                print(cognito_response["Username"])
+
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
                     {"user": cognito_response["Username"]})
@@ -53,16 +54,15 @@ def handler(event, context):
                 cognito_response = cognito.initiate_auth(**params)
 
                 if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
-                    ws_token = uuid.uuid4()
-                    ws_token_hash = hashlib.sha256(str(ws_token).encode("utf-8")).hexdigest()
-                    ws_token_table.put_item(Item={"token_hash": ws_token_hash, "username": body["username"], "at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+                    websocket = webssocket_token()
+                    ws_token_table.put_item(Item={"username": body["username"],"token_hash": websocket["ws_token_hash"], "issued": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),"from":event["headers"]["Origin"]})
 
                     token = cognito_response["AuthenticationResult"]["AccessToken"]
                     token_string = "token=%s; SameSite=None; Secure; Path=/" % token
 
                     response["headers"]["Set-Cookie"] = token_string
                     response["statusCode"] = 200
-                    response["body"] = json.dumps({"message": "welcome","ws_token":str(ws_token)})
+                    response["body"] = json.dumps({"message": "welcome","ws_token":str(websocket["ws_token"])})
 
                 else:
                     raise Exception("there was an error signing in.")

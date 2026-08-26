@@ -25,6 +25,7 @@ const App = () => {
     message: null,
     state: null,
     user: null,
+    ws_token: null
   });
 
   useEffect(() => {
@@ -35,13 +36,15 @@ const App = () => {
         const status = fetcher.status;
 
         if (status !== 200) {
-          setAuthorized({ message: "unathorized", state: false, user: null });
+          setAuthorized({ message: "unathorized", state: false, user: null, ws_token:null });
         } else {
           const { user } = fetcher.returnBody;
-          setAuthorized({ message: "authorized", state: true, user: user });
+          setAuthorized({ message: "authorized", state: true, user: user,ws_token:null });
         }
       })();
   });
+
+  console.log(authorized)
 
   return (
     <UserContext.Provider value={{ authorized, setAuthorized }}>
