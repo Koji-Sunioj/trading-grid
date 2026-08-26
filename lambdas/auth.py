@@ -1,6 +1,9 @@
 import os
 import json
+import uuid
 import boto3
+import hashlib
+import datetime
 import traceback
 
 from models import User
@@ -8,6 +11,8 @@ from utils import NoCookieException
 
 response = {}
 response['headers'] = {"Access-Control-Allow-Methods": "*"}
+dynamodb = boto3.resource('dynamodb')
+ws_token_table = dynamodb.Table(os.environ.get("WS_TOKEN_TABLE"))
 
 def handler(event, context):
     
@@ -48,11 +53,17 @@ def handler(event, context):
                 cognito_response = cognito.initiate_auth(**params)
 
                 if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
+                    ws_token = uuid.uuid4()
+                    ws_token_hash = hashlib.sha256(str(ws_token).encode("utf-8")).hexdigest()
+                    ws_token_table.put_item(Item={"token_hash": ws_token_hash, "username": body["username"], "at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+
                     token = cognito_response["AuthenticationResult"]["AccessToken"]
                     token_string = "token=%s; SameSite=None; Secure; Path=/" % token
+
                     response["headers"]["Set-Cookie"] = token_string
                     response["statusCode"] = 200
-                    response["body"] = json.dumps({"message": "welcome"})
+                    response["body"] = json.dumps({"message": "welcome","ws_token":str(ws_token)})
+
                 else:
                     raise Exception("there was an error signing in.")
             case _:
