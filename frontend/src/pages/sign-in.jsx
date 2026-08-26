@@ -31,13 +31,13 @@ export const SignIn = () => {
     );
     await fetcher.execute();
     const status = fetcher.status;
-    const { user, ws_token } = fetcher.returnBody;
+    const { ws_token } = fetcher.returnBody;
 
     if (status === 200) {
       setAuthorized({
         message: "authorized",
         state: true,
-        user: user,
+        user: username,
         ws_token: ws_token,
       });
       navigate(`/erp`);

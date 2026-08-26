@@ -17,7 +17,6 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router";
 import { React, createContext, useState, useEffect } from "react";
 
-
 export const UserContext = createContext(null);
 
 const App = () => {
@@ -25,26 +24,46 @@ const App = () => {
     message: null,
     state: null,
     user: null,
-    ws_token: null
+    ws_token: null,
   });
 
-  useEffect(() => {
-    authorized.state === null &&
-      (async () => {
-        const fetcher = new Fetcher("GET", import.meta.env.VITE_API + `/auth`);
+  const checkAuth = async () => {
+    const fetcher = new Fetcher("GET", import.meta.env.VITE_API + `/auth`);
         await fetcher.execute();
         const status = fetcher.status;
 
         if (status !== 200) {
-          setAuthorized({ message: "unathorized", state: false, user: null, ws_token:null });
+          setAuthorized({
+            message: "unathorized",
+            state: false,
+            user: null,
+            ws_token: null,
+          });
         } else {
-          const { user } = fetcher.returnBody;
-          setAuthorized({ message: "authorized", state: true, user: user,ws_token:null });
+          const { user, ws_token } = fetcher.returnBody;
+          setAuthorized({
+            message: "authorized",
+            state: true,
+            user: user,
+            ws_token: ws_token,
+          });
         }
-      })();
-  });
+  }
 
-  console.log(authorized)
+  const connectWebSocket = () => {
+    const websocket = new WebSocket(import.meta.env.VITE_WEBSOCKET+`?user=merchant&username=${authorized.user}&token=${authorized.ws_token}`);
+  } 
+
+  useEffect(() => {
+    if (authorized.state === null) {
+      checkAuth()
+    } else if (authorized.ws_token !== null) {
+      connectWebSocket();
+    }
+  },[authorized]);
+
+  console.log(authorized);
+
 
   return (
     <UserContext.Provider value={{ authorized, setAuthorized }}>

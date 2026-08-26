@@ -1,5 +1,6 @@
 import os
 import json
+import hashlib
 import boto3
 import datetime
 import traceback
@@ -9,26 +10,29 @@ from utils import check_hmac, search, HMACException
 dynamodb = boto3.resource('dynamodb')
 sockets_table = dynamodb.Table(os.environ.get("SOCKETS_TABLE"))
 routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+ws_token_table = dynamodb.Table(os.environ.get("WS_TOKEN_TABLE"))
 
 def handler(event, context):
     route_key = event["requestContext"]["routeKey"]
     connection_id = event["requestContext"]["connectionId"]
-
-    print(route_key)
-    print(connection_id)
-    print(event["headers"])
-
+    query = event["queryStringParameters"] if "queryStringParameters" in event else None
+    
     try:
         match route_key:
             case "$connect":
-                if "queryStringParameters" in event and event["queryStringParameters"]["user"] == "merchant":
-                    cognito = boto3.client("cognito-idp")
-                    token = event["headers"]["Cookie"].split("=")[1]
-                    cognito.get_user(AccessToken=token)
-                elif "queryStringParameters" in event and event["queryStringParameters"]["user"] == "client" and "client_id" in event["queryStringParameters"]:
+                if query != None and query["user"] == "merchant" and list(query.keys()) == ['token', 'user', 'username']:
+                    ws_token = query["token"]
+                    ws_token_hash = hashlib.sha256(str(ws_token).encode("utf-8")).hexdigest()
+                    token_entry = ws_token_table.get_item(Key={"username":query["username"]})["Item"]
+                    
+                    if token_entry["token_hash"] != ws_token_hash and token_entry["username"] != query["username"]:
+                        raise Exception("unathorized user")
+                    
+                elif query != None and query["user"] == "client" and list(query.keys()) == ['client_id', 'hmac', 'user']:
                     clients = routing_table.scan()["Items"]
-                    client = search(clients, "client_id",event["queryStringParameters"]["client_id"])
-                    check_hmac(str(event["queryStringParameters"]),event["headers"]["Authorization"], client["hmac"])
+                    client = search(clients, "client_id",query["client_id"])
+
+                    check_hmac(str({"client_id":query["client_id"],"user":query["user"]}),query["hmac"], client["hmac"])
                 else:
                     raise Exception("unauthorized user")
 
