@@ -28,13 +28,14 @@ def handler(event, context):
                     raise NoCookieException("please log in again")
 
                 token = event["headers"]["Cookie"].split("=")[1]
-                
                 cognito_response = cognito.get_user(AccessToken=token)
-                print(cognito_response["Username"])
+
+                websocket = webssocket_token()
+                ws_token_table.put_item(Item={"username": cognito_response["Username"],"token_hash": websocket["ws_token_hash"], "issued": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),"from":event["headers"]["Origin"]})
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
-                    {"user": cognito_response["Username"]})
+                    {"user": cognito_response["Username"],"ws_token":str(websocket["ws_token"])})
 
             case "POST /auth":
                 if event["body"] != None:
