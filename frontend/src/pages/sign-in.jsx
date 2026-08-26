@@ -2,9 +2,7 @@ import { Fetcher } from "../utils/utils";
 
 import { useContext } from "react";
 import { UserContext } from "../main";
-import { Link, useNavigate } from "react-router";
-
-//sign in
+import { useNavigate } from "react-router";
 
 export const SignIn = () => {
   const navigate = useNavigate();

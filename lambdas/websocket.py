@@ -4,7 +4,6 @@ import hashlib
 import boto3
 import datetime
 import traceback
-
 from utils import check_hmac, search, HMACException
 
 dynamodb = boto3.resource('dynamodb')
