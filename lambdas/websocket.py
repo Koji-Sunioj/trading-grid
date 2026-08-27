@@ -35,10 +35,17 @@ def handler(event, context):
                 else:
                     raise Exception("unauthorized user")
 
-                sockets_table.put_item(Item={"connection_id": connection_id, "user": event["queryStringParameters"]["user"], "at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")})  
+                sockets_table.put_item(Item={"connection_id": connection_id, 
+                    "user": event["queryStringParameters"]["user"], "at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                       "endpoint_url":"https://%s/%s" % (event["requestContext"]["domainName"], event["requestContext"]["stage"])})  
             
             case "$disconnect":
                 sockets_table.delete_item(Key={"connection_id": connection_id})
+            case "ping":
+                api_client = boto3.client("apigatewaymanagementapi", endpoint_url="https://%s/%s" % (
+                    event["requestContext"]["domainName"], event["requestContext"]["stage"]))
+                api_client.post_to_connection(
+                        Data=json.dumps({"message": "pong"}), ConnectionId=connection_id)
     
             case _:
                 raise Exception("no matching resources")

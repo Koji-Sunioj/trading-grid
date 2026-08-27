@@ -1,11 +1,14 @@
 import { determineHeaders,determineNextAction, Fetcher } from "../utils/utils";
 
-import { useEffect, useState } from "react";
+import { UserContext } from "../main";
+
+import { useEffect, useState,useContext } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router";
 
 export const ERP = () => {
   const navigate = useNavigate();
   const { module, client_id } = useParams();
+  const { updatedModule } = useContext(UserContext);
   const [queryParams, setQueryParams] = useSearchParams();
 
   const [dispatches, setDispatches] = useState(null);
@@ -27,7 +30,11 @@ export const ERP = () => {
     } else {
       fetchOrders();
     }
-  }, [queryParams]);
+
+    if (!invalidParams && updatedModule !== null) {
+      fetchOrders();
+    }
+  }, [queryParams,updatedModule]);
 
   const fetchOrders = async () => {
     setUIState({ loading: true });

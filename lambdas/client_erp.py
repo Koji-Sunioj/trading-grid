@@ -13,6 +13,7 @@ from boto3.dynamodb.conditions import Attr
 dynamodb = boto3.resource('dynamodb')
 po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
 routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+sockets_table = dynamodb.Table(os.environ.get("SOCKETS_TABLE"))
 dispatch_table = dynamodb.Table(os.environ.get("DISPATCH_TABLE"))
 ammendments_table = dynamodb.Table(
     os.environ.get("PO_AMMENDMENT_TABLE"))
@@ -129,6 +130,12 @@ def handler(event, context, route_key, response):
             if new_po["ResponseMetadata"]["HTTPStatusCode"] != 200:
                 raise Exception(
                     "there was an error creating that purchase order")
+
+            merchant_sockets = sockets_table.scan(FilterExpression=Attr("user").eq("merchant"))["Items"]
+
+            for connection in merchant_sockets:
+                api_client = boto3.client("apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
+                api_client.post_to_connection(Data=json.dumps({"message": "update-purchase-order","purchse_order":payload["purchase_order_id"]}), ConnectionId=connection["connection_id"])
 
             response["statusCode"] = 200
             response["body"] = json.dumps(
