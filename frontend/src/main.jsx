@@ -74,7 +74,10 @@ const App = () => {
     };
 
     websocket.onmessage = (event) => {
-      setUpdateModule(JSON.parse(event.data));
+      const data = JSON.parse(event.data)
+      if (data.hasOwnProperty("module") && data.hasOwnProperty("identifier")) {
+        setUpdateModule();
+      }
     };
   };
 

@@ -315,6 +315,12 @@ def handler(event, context, route_key, response):
                 raise Exception(
                     "there was an error returning a dispatch order to the client")
 
+            client_sockets = sockets_table.scan(FilterExpression=Attr("user").eq("client"))["Items"]
+            
+            for connection in client_sockets:
+                api_client = boto3.client("apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
+                api_client.post_to_connection(Data=json.dumps({"module": "dispatches","identifier":dispatch_id}), ConnectionId=connection["connection_id"])
+                
             response["statusCode"] = 200
             response["body"] = json.dumps(
                 {"message": "dispatch %s updated at the clients server" % dispatch_id}, default=serialize_float)

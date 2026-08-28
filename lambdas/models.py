@@ -25,7 +25,7 @@ class PurchaseOrder(BaseModel):
     dispatch_cost: Decimal
 
 class DispatchUpdate(BaseModel):
-    client: str
+    client_id: str
     status: Literal['received','pending-supplier','shipped','rescheduled']
 
 class Client(BaseModel):

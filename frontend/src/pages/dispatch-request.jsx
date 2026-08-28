@@ -1,14 +1,16 @@
+import { UserContext } from "../main";
 import { Fetcher, determineNextAction } from "../utils/utils";
 
-import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
+import { useState, useEffect, useContext } from "react";
 
 export const DispatchRequest = () => {
   const navigate = useNavigate();
   const { dispatch_id } = useParams();
-  const [dispatchRequest, setDispatchRequest] = useState(null);
+  const { updatedModule } = useContext(UserContext);
   const [UIState, setUIState] = useState({ loading: false });
-
+  const [dispatchRequest, setDispatchRequest] = useState(null);
+  
   useEffect(() => {
     getDispatch(dispatch_id);
   }, [dispatch_id]);
@@ -142,19 +144,25 @@ export const DispatchRequest = () => {
                       className="input"
                       type="text"
                       name="next_status"
-                      value={nextAction}
+                      value={"shipped"}
+                     /*  value={nextAction} */
                       disabled
                       style={{ textAlign: "center" }}
                     ></input>
                   </p>
                 </div>
-                {["shipped", "rescheduled"].includes(nextAction) && (
+                <div className="field">
+                    <p className="control">
+                      <button className="button is-success">submit</button>
+                    </p>
+                  </div>
+                {/* {["shipped", "rescheduled"].includes(nextAction) && (
                   <div className="field">
                     <p className="control">
                       <button className="button is-success">submit</button>
                     </p>
                   </div>
-                )}
+                )} */}
                 {dispatchRequest.hasOwnProperty("new_delivery_date") && (
                   <article class="message is-danger mt-2">
                     <div class="message-body">

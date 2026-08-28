@@ -67,7 +67,7 @@ export class Fetcher {
     const response = await fetch(this.url, params);
     const { status } = response;
     this.status = status;
-
+    
     if (this.status === 200) {
       this.returnBody = await response.json();
       switch(this.method) {
