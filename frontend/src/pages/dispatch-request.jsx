@@ -60,8 +60,6 @@ export const DispatchRequest = () => {
       client_id: dispatchRequest.client_id,
     });
 
-    console.log(payload)
-
     const fetcher = new Fetcher(
       "POST",
       import.meta.env.VITE_API + `/merchant/dispatches/${dispatch_id}`,

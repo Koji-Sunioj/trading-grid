@@ -21,6 +21,7 @@ from boto3.dynamodb.conditions import Attr
 dynamodb = boto3.resource('dynamodb')
 po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
 routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
+sockets_table = dynamodb.Table(os.environ.get("SOCKETS_TABLE"))
 dispatch_table = dynamodb.Table(os.environ.get("DISPATCH_TABLE"))
 ammendments_table = dynamodb.Table(
     os.environ.get("PO_AMMENDMENT_TABLE"))
@@ -198,6 +199,8 @@ def handler(event, context, route_key, response):
             message = "purchase order %s received at client with order status %s" % (
                 purchase_order_id, status)
 
+            client_sockets = sockets_table.scan(FilterExpression=Attr("user").eq("client"))["Items"]
+
             if status == "confirmed":
                 dispatch_uuid = str(uuid.uuid4())
 
@@ -216,6 +219,18 @@ def handler(event, context, route_key, response):
                 if dispatch_request.status_code != 200:
                     raise Exception(
                         "dispatch triggered since confirmed lines equals requested quantity. however, there was an error returning a dispatch order to the client")
+                
+                for connection in client_sockets:
+                    api_client = boto3.client("apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
+                    api_client.post_to_connection(Data=json.dumps({"module": "dispatches","identifier":dispatch_uuid}), ConnectionId=connection["connection_id"])
+                
+            for connection in client_sockets:
+                api_client = boto3.client("apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
+                
+                try:
+                    api_client.post_to_connection(Data=json.dumps({"module": "purchase-orders","identifier":purchase_order_id}), ConnectionId=connection["connection_id"])
+                except:
+                    sockets_table.delete_item(Key={"connection_id":connection["connection_id"]})
 
             response["statusCode"] = 200
             response["body"] = json.dumps({"message": message})

@@ -26,7 +26,7 @@ const App = () => {
     user: null,
     ws_token: null,
   });
-  const [updatedModule,setUpdateModule] = useState(null);
+  const [updatedModule,setUpdateModule] = useState({module: null, identifer: null});
 
   const checkAuth = async () => {
     const fetcher = new Fetcher("GET", import.meta.env.VITE_API + `/auth`);

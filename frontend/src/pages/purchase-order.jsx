@@ -1,10 +1,12 @@
+import { UserContext } from "../main";
 import { Fetcher } from "../utils/utils";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router";
 
 export const PurchaseOrder = () => {
   const navigate = useNavigate();
+  const { updatedModule } = useContext(UserContext);
   const { purchase_order, client_id } = useParams();
   const [purchaseOrder, setPurchaseOrder] = useState(null);
   const [UIState, setUIState] = useState({ loading: false });
@@ -20,9 +22,15 @@ export const PurchaseOrder = () => {
     "confirmed",
   ];
 
+
+
   useEffect(() => {
-    fetchOrder();
-  }, [purchase_order]);
+    if (purchaseOrder === null && updatedModule.module == null) {
+      fetchOrder();
+    } else if (purchaseOrder !== null && updatedModule.module === "purchase-orders" && updatedModule.identifier === Number(purchase_order)) {
+      fetchOrder();
+    }
+  }, [purchase_order,updatedModule]);
 
   const fetchOrder = async () => {
     setUIState({ loading: true });

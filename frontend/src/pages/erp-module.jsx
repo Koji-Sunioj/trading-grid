@@ -1,8 +1,8 @@
-import { determineHeaders,determineNextAction, Fetcher } from "../utils/utils";
 
 import { UserContext } from "../main";
+import { determineHeaders,determineNextAction, Fetcher } from "../utils/utils";
 
-import { useEffect, useState,useContext } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router";
 
 export const ERP = () => {
@@ -27,44 +27,53 @@ export const ERP = () => {
       setQueryParams({ sort: "modified", order: "desc" });
     } else if (invalidParams && module === "dispatches") {
       setQueryParams({ sort: "estimated_delivery", order: "desc" });
-    } else {
-      fetchOrders();
-    }
+    } else if (!invalidParams  && (updatedModule.module === null || updatedModule.module === module)) {
 
-    if (!invalidParams && updatedModule !== null) {
-      fetchOrders();
+      let endpoint = `/merchant/${module}?sort=${sortBy}&order=${orderBy}`;
+      if (client_id !== undefined) {
+        endpoint += `&client_id=${client_id}`;
+      }
+
+      switch(module) {
+        case "purchase-orders":
+          fetchPurchaseOrders(endpoint);
+          break;
+        case "dispatches": 
+          fetchDispatchItems(endpoint);
+          break;
+      }
     }
   }, [queryParams,updatedModule]);
 
-  const fetchOrders = async () => {
-    setUIState({ loading: true });
 
-    let endpoint = `/merchant/${module}?sort=${sortBy}&order=${orderBy}`;
-    if (client_id !== undefined) {
-      endpoint += `&client_id=${client_id}`;
-    }
+  const fetchDispatchItems = async (endpoint) => {
+    setUIState({ loading: true });
 
     const fetcher = new Fetcher("GET", import.meta.env.VITE_API + endpoint);
     await fetcher.execute(navigate);
     const status = fetcher.status;
 
-    switch (module) {
-      case "purchase-orders":
-        if (status !== 200) {
-          setPurchaseOrders([]);          
-        } else {
-          const { orders } = fetcher.returnBody;
-          setPurchaseOrders(orders);
-        }
-        break;
-      case "dispatches":
-        if (status !== 200) {
-          setPurchaseOrders([]);
-        } else {
-          const { dispatches } = fetcher.returnBody;
-          setDispatches(dispatches);
-        }
-        break;
+    if (status === 200) {
+      const { dispatches } = fetcher.returnBody;
+      setDispatches(dispatches);
+    } else {
+      setDispatches([]);      
+    }
+    setUIState({ loading: false });
+  };
+
+  const fetchPurchaseOrders = async (endpoint) => {
+    setUIState({ loading: true });
+
+    const fetcher = new Fetcher("GET", import.meta.env.VITE_API + endpoint);
+    await fetcher.execute(navigate);
+    const status = fetcher.status;
+
+    if (status === 200) {
+      const { orders } = fetcher.returnBody;
+      setPurchaseOrders(orders);
+    } else {
+      setPurchaseOrders([]);      
     }
     setUIState({ loading: false });
   };

@@ -135,7 +135,7 @@ def handler(event, context, route_key, response):
 
             for connection in merchant_sockets:
                 api_client = boto3.client("apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
-                api_client.post_to_connection(Data=json.dumps({"message": "update-purchase-order","purchse_order":payload["purchase_order_id"]}), ConnectionId=connection["connection_id"])
+                api_client.post_to_connection(Data=json.dumps({"module": "purchase-orders","identifier":payload["purchase_order_id"]}), ConnectionId=connection["connection_id"])
 
             response["statusCode"] = 200
             response["body"] = json.dumps(
