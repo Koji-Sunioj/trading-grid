@@ -1,10 +1,11 @@
+import { UserContext } from "../App";
+
 import { useContext } from "react";
 import { Link } from "react-router";
-import { UserContext } from "../main";
 
 export const LandingPage = () => {
   const { authorized } = useContext(UserContext);
-
+  
   return (
     <div>
       <div className="has-text-centered mb-4">

@@ -1,10 +1,11 @@
 import { Fetcher } from "../utils/utils";
 
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useEffect, useState } from "react";
 
 export const RoutingTable = () => {
   const navigate = useNavigate();
+  
   const [clients, setClients] = useState(null);
   const [UIState, setUIState] = useState({ loading: false, message: null });
 
