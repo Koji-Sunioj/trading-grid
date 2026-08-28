@@ -19,6 +19,7 @@ ammendments_table = dynamodb.Table(
     os.environ.get("PO_AMMENDMENT_TABLE"))
 merchant_params = json.loads(os.environ.get("MERCHANT_PARAMS"))
 
+
 def validate(function):
     @wraps(function)
     def lambda_request(*args):
@@ -31,9 +32,10 @@ def validate(function):
 
             if event["httpMethod"] in ["POST", "PUT"] and event["body"] == None:
                 response["statusCode"] = 400
-                response["body"] = json.dumps({"message": "no body in request"})
+                response["body"] = json.dumps(
+                    {"message": "no body in request"})
                 return response
-        
+
             executed = function(*args, route_key, response)
             return executed
 
@@ -41,7 +43,7 @@ def validate(function):
             response["statusCode"] = 401
             response["body"] = json.dumps({"message": "invalid credentials"})
             return response
-        
+
         except Exception as error:
             print("error name %s" % error.__class__.__name__)
             print(traceback.format_exc())
@@ -51,7 +53,7 @@ def validate(function):
                 case "Exception":
                     error_message = error.__str__()
                 case "ValidationError":
-                    error_message = "server payload did not match schema for the requested resource"   
+                    error_message = "server payload did not match schema for the requested resource"
 
             response['statusCode'] = 400
             response["body"] = json.dumps({"message": error_message})
@@ -71,14 +73,15 @@ def handler(event, context, route_key, response):
 
             client = search(clients, "client_id", payload["client_id"])
             check_hmac(event["body"], event["headers"]
-                        ["Authorization"], client["hmac"])
+                       ["Authorization"], client["hmac"])
 
             items = 0
 
             for line in payload["data"]:
                 items += line["quantity"]
 
-            freight = get_dispatch(items, client, merchant_params["store-coords"], merchant_params["distance-api-key"])
+            freight = get_dispatch(
+                items, client, merchant_params["store-coords"], merchant_params["distance-api-key"])
 
             if freight["estimated_delivery"] != payload["estimated_delivery"] or round(freight["freight_cost"], 2) != round(float(payload["dispatch_cost"]), 2):
                 raise Exception("cost provided by customer not matching")
@@ -106,7 +109,7 @@ def handler(event, context, route_key, response):
 
             if "Item" in purchase_order_lines:
                 new_albums = [line["album_id"]
-                                for line in payload["data"]]
+                              for line in payload["data"]]
                 keep_lines = [line for line in purchase_order_lines["Item"]["lines"] if int(
                     line["album_id"]) in new_albums]
 
@@ -131,11 +134,14 @@ def handler(event, context, route_key, response):
                 raise Exception(
                     "there was an error creating that purchase order")
 
-            merchant_sockets = sockets_table.scan(FilterExpression=Attr("user").eq("merchant"))["Items"]
+            merchant_sockets = sockets_table.scan(
+                FilterExpression=Attr("user").eq("merchant"))["Items"]
 
             for connection in merchant_sockets:
-                api_client = boto3.client("apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
-                api_client.post_to_connection(Data=json.dumps({"module": "purchase-orders","identifier":payload["purchase_order_id"]}), ConnectionId=connection["connection_id"])
+                api_client = boto3.client(
+                    "apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
+                api_client.post_to_connection(Data=json.dumps(
+                    {"module": "purchase-orders", "identifier": payload["purchase_order_id"]}), ConnectionId=connection["connection_id"])
 
             response["statusCode"] = 200
             response["body"] = json.dumps(
@@ -145,7 +151,7 @@ def handler(event, context, route_key, response):
             client = search(clients, "client_id",
                             event["queryStringParameters"]["client_id"])
             check_hmac(str(event["queryStringParameters"]),
-                        event["headers"]["Authorization"], client["hmac"])
+                       event["headers"]["Authorization"], client["hmac"])
 
             freight = get_dispatch(
                 event["queryStringParameters"]["items"], client, merchant_params["store-coords"], merchant_params["distance-api-key"])
@@ -161,7 +167,7 @@ def handler(event, context, route_key, response):
 
             client = search(clients, "client_id", payload["client_id"])
             check_hmac(event["body"], event["headers"]
-                        ["Authorization"], client["hmac"])
+                       ["Authorization"], client["hmac"])
 
             dispatch_item = dispatch_table.get_item(
                 Key={"dispatch_id": dispatch_id})["Item"]
@@ -172,6 +178,15 @@ def handler(event, context, route_key, response):
 
             dispatch_item["status"] = payload["status"]
             dispatch_table.put_item(Item=dispatch_item)
+
+            merchant_sockets = sockets_table.scan(
+                FilterExpression=Attr("user").eq("merchant"))["Items"]
+
+            for connection in merchant_sockets:
+                api_client = boto3.client(
+                    "apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
+                api_client.post_to_connection(Data=json.dumps(
+                    {"module": "dispatches", "identifier": dispatch_id}), ConnectionId=connection["connection_id"])
 
             response["statusCode"] = 200
             response["body"] = json.dumps(

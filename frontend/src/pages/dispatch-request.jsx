@@ -10,12 +10,20 @@ export const DispatchRequest = () => {
   const { updatedModule } = useContext(UserContext);
   const [UIState, setUIState] = useState({ loading: false });
   const [dispatchRequest, setDispatchRequest] = useState(null);
-  
-  useEffect(() => {
-    getDispatch(dispatch_id);
-  }, [dispatch_id]);
 
-  const getDispatch = async (dispatch_id) => {
+  useEffect(() => {
+    if (dispatchRequest === null) {
+      getDispatch();
+    } else if (
+      dispatchRequest !== null &&
+      updatedModule.module === "dispatches" &&
+      updatedModule.identifier === dispatch_id
+    ) {
+      getDispatch();
+    }
+  }, [dispatch_id, updatedModule]);
+
+  const getDispatch = async () => {
     setUIState({ loading: true });
 
     const fetcher = new Fetcher(
@@ -51,7 +59,7 @@ export const DispatchRequest = () => {
       target: {
         delivery: { value: delivery },
         next_status: { value: next_status },
-        new_delivery: {value: new_delivery}
+        new_delivery: { value: new_delivery },
       },
     } = event;
 
@@ -73,7 +81,8 @@ export const DispatchRequest = () => {
     setUIState({ loading: false });
   };
 
-  const hasNewDeliveryDate = dispatchRequest !== null &&
+  const hasNewDeliveryDate =
+    dispatchRequest !== null &&
     dispatchRequest.hasOwnProperty("new_delivery_date");
 
   return (
@@ -118,7 +127,7 @@ export const DispatchRequest = () => {
                     ></input>
                   </p>
                 </div>
-                <div style={{display: hasNewDeliveryDate ? "block":"none" }}>
+                <div style={{ display: hasNewDeliveryDate ? "block" : "none" }}>
                   <label class="label">new delivery date</label>
                   <div className="field">
                     <p className="control">
@@ -128,8 +137,8 @@ export const DispatchRequest = () => {
                         name="new_delivery"
                         value={
                           hasNewDeliveryDate
-                            ?  dispatchRequest.new_delivery_date
-                            :  "" 
+                            ? dispatchRequest.new_delivery_date
+                            : ""
                         }
                         style={{ textAlign: "center" }}
                         disabled
@@ -144,25 +153,19 @@ export const DispatchRequest = () => {
                       className="input"
                       type="text"
                       name="next_status"
-                      value={"shipped"}
-                     /*  value={nextAction} */
+                      value={nextAction}
                       disabled
                       style={{ textAlign: "center" }}
                     ></input>
                   </p>
                 </div>
-                <div className="field">
-                    <p className="control">
-                      <button className="button is-success">submit</button>
-                    </p>
-                  </div>
-                {/* {["shipped", "rescheduled"].includes(nextAction) && (
+                {["shipped", "rescheduled"].includes(nextAction) && (
                   <div className="field">
                     <p className="control">
                       <button className="button is-success">submit</button>
                     </p>
                   </div>
-                )} */}
+                )}
                 {dispatchRequest.hasOwnProperty("new_delivery_date") && (
                   <article class="message is-danger mt-2">
                     <div class="message-body">

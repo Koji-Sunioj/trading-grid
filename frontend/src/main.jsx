@@ -26,7 +26,10 @@ const App = () => {
     user: null,
     ws_token: null,
   });
-  const [updatedModule,setUpdateModule] = useState({module: null, identifer: null});
+  const [updatedModule, setUpdateModule] = useState({
+    module: null,
+    identifer: null,
+  });
 
   const checkAuth = async () => {
     const fetcher = new Fetcher("GET", import.meta.env.VITE_API + `/auth`);
@@ -74,9 +77,9 @@ const App = () => {
     };
 
     websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data)
+      const data = JSON.parse(event.data);
       if (data.hasOwnProperty("module") && data.hasOwnProperty("identifier")) {
-        setUpdateModule();
+        setUpdateModule(JSON.parse(event.data));
       }
     };
   };
@@ -91,7 +94,7 @@ const App = () => {
   }, [authorized]);
 
   return (
-    <UserContext.Provider value={{ authorized, setAuthorized,updatedModule }}>
+    <UserContext.Provider value={{ authorized, setAuthorized, updatedModule }}>
       <BrowserRouter>
         <div>
           <NavBar authorized={authorized.state} />

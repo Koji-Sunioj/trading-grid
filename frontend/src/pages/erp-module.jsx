@@ -1,6 +1,5 @@
-
 import { UserContext } from "../main";
-import { determineHeaders,determineNextAction, Fetcher } from "../utils/utils";
+import { determineHeaders, determineNextAction, Fetcher } from "../utils/utils";
 
 import { useEffect, useState, useContext } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router";
@@ -27,24 +26,32 @@ export const ERP = () => {
       setQueryParams({ sort: "modified", order: "desc" });
     } else if (invalidParams && module === "dispatches") {
       setQueryParams({ sort: "estimated_delivery", order: "desc" });
-    } else if (!invalidParams  && (updatedModule.module === null || updatedModule.module === module)) {
-
+    } else if (!invalidParams) {
       let endpoint = `/merchant/${module}?sort=${sortBy}&order=${orderBy}`;
       if (client_id !== undefined) {
         endpoint += `&client_id=${client_id}`;
       }
-
-      switch(module) {
+      switch (module) {
         case "purchase-orders":
-          fetchPurchaseOrders(endpoint);
+          if (purchaseOrders === null) {
+            fetchPurchaseOrders(endpoint);
+          } else if (
+            purchaseOrders !== null &&
+            updatedModule.module === module
+          ) {
+            fetchPurchaseOrders(endpoint);
+          }
           break;
-        case "dispatches": 
-          fetchDispatchItems(endpoint);
+        case "dispatches":
+          if (dispatches === null) {
+            fetchDispatchItems(endpoint);
+          } else if (dispatches !== null && updatedModule.module === module) {
+            fetchDispatchItems(endpoint);
+          }
           break;
       }
     }
-  }, [queryParams,updatedModule]);
-
+  }, [queryParams, updatedModule]);
 
   const fetchDispatchItems = async (endpoint) => {
     setUIState({ loading: true });
@@ -57,7 +64,7 @@ export const ERP = () => {
       const { dispatches } = fetcher.returnBody;
       setDispatches(dispatches);
     } else {
-      setDispatches([]);      
+      setDispatches([]);
     }
     setUIState({ loading: false });
   };
@@ -73,7 +80,7 @@ export const ERP = () => {
       const { orders } = fetcher.returnBody;
       setPurchaseOrders(orders);
     } else {
-      setPurchaseOrders([]);      
+      setPurchaseOrders([]);
     }
     setUIState({ loading: false });
   };
@@ -139,7 +146,8 @@ export const ERP = () => {
                   address,
                 } = dispatch;
 
-                const highlightShippable = determineNextAction(estimated_delivery,status) === "shipped"
+                const highlightShippable =
+                  determineNextAction(estimated_delivery, status) === "shipped";
 
                 return (
                   <tr key={dispatch_id}>
@@ -161,7 +169,9 @@ export const ERP = () => {
                     </td>
                     <td>{client_id}</td>
                     <td>{estimated_delivery}</td>
-                    <td style={{color:highlightShippable ? "red" : "white"}}>{status}</td>
+                    <td style={{ color: highlightShippable ? "red" : "white" }}>
+                      {status}
+                    </td>
                     <td>{address}</td>
                   </tr>
                 );

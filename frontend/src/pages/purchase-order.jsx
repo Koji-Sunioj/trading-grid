@@ -22,15 +22,17 @@ export const PurchaseOrder = () => {
     "confirmed",
   ];
 
-
-
   useEffect(() => {
-    if (purchaseOrder === null && updatedModule.module == null) {
+    if (purchaseOrder === null) {
       fetchOrder();
-    } else if (purchaseOrder !== null && updatedModule.module === "purchase-orders" && updatedModule.identifier === Number(purchase_order)) {
+    } else if (
+      purchaseOrder !== null &&
+      updatedModule.module === "purchase-orders" &&
+      Number(updatedModule.identifier) === Number(purchase_order)
+    ) {
       fetchOrder();
     }
-  }, [purchase_order,updatedModule]);
+  }, [purchase_order, updatedModule]);
 
   const fetchOrder = async () => {
     setUIState({ loading: true });
@@ -90,7 +92,7 @@ export const PurchaseOrder = () => {
 
     if (status === 200) {
       fetchOrder();
-    } 
+    }
     setUIState({ loading: false });
   };
 
