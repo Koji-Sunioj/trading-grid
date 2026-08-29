@@ -4,7 +4,7 @@ import boto3
 import traceback
 
 from models import PurchaseOrder, DispatchUpdate
-from utils import check_hmac, get_dispatch, search, HMACException
+from utils import check_hmac, get_dispatch, search, HMACException, broadcast
 
 from functools import wraps
 from decimal import Decimal
@@ -134,14 +134,7 @@ def handler(event, context, route_key, response):
                 raise Exception(
                     "there was an error creating that purchase order")
 
-            merchant_sockets = sockets_table.scan(
-                FilterExpression=Attr("user").eq("merchant"))["Items"]
-
-            for connection in merchant_sockets:
-                api_client = boto3.client(
-                    "apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
-                api_client.post_to_connection(Data=json.dumps(
-                    {"module": "purchase-orders", "identifier": payload["purchase_order_id"]}), ConnectionId=connection["connection_id"])
+            broadcast("merchant","purchase-orders",payload["purchase_order_id"])
 
             response["statusCode"] = 200
             response["body"] = json.dumps(
