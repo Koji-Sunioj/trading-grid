@@ -1,11 +1,15 @@
+import os
 import hmac
 import math
 import uuid
+import json
+import boto3
 import hashlib
 import datetime
 import requests
 
 from zoneinfo import ZoneInfo
+from boto3.dynamodb.conditions import Attr
 from datetime import datetime, timedelta, date
 
 class HMACException(Exception):
@@ -13,6 +17,18 @@ class HMACException(Exception):
 
 class NoCookieException(Exception):
     pass
+
+def broadcast(user,module,identifier):
+    dynamodb = boto3.resource('dynamodb')
+    sockets_table = dynamodb.Table(os.environ.get("SOCKETS_TABLE"))
+
+    merchant_sockets = sockets_table.scan(FilterExpression=Attr("user").eq(user))["Items"]
+
+    for connection in merchant_sockets:
+        api_client = boto3.client(
+            "apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
+        api_client.post_to_connection(Data=json.dumps(
+            {"module": module, "identifier": identifier}), ConnectionId=connection["connection_id"])
 
 def serialize_float(obj):
     return float(obj)
