@@ -27,8 +27,11 @@ def broadcast(user,module,identifier):
     for connection in merchant_sockets:
         api_client = boto3.client(
             "apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
-        api_client.post_to_connection(Data=json.dumps(
-            {"module": module, "identifier": identifier}), ConnectionId=connection["connection_id"])
+        try:
+            api_client.post_to_connection(Data=json.dumps(
+                {"module": module, "identifier": identifier}), ConnectionId=connection["connection_id"])
+        except:
+            sockets_table.delete_item(Key={"connection_id":connection["connection_id"]})
 
 def serialize_float(obj):
     return float(obj)
