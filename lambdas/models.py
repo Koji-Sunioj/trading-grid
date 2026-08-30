@@ -2,9 +2,11 @@ from decimal import Decimal
 from pydantic import BaseModel
 from typing import Literal, List
 
+
 class User(BaseModel):
     username: str
     password: str
+
 
 class PurchaseOrderLine(BaseModel):
     line: int
@@ -15,6 +17,7 @@ class PurchaseOrderLine(BaseModel):
     quantity: int
     line_total: Decimal
 
+
 class PurchaseOrder(BaseModel):
     client_id: str
     purchase_order_id: int
@@ -24,9 +27,11 @@ class PurchaseOrder(BaseModel):
     estimated_delivery: str
     dispatch_cost: Decimal
 
+
 class DispatchUpdate(BaseModel):
     client_id: str
-    status: Literal['received','pending-supplier','shipped','rescheduled']
+    status: Literal['received', 'pending-supplier', 'shipped', 'rescheduled']
+
 
 class Client(BaseModel):
     client_id: str
@@ -34,15 +39,18 @@ class Client(BaseModel):
     hmac: str
     address: str
 
+
 class PurchaseOrderAmmendmentLine(BaseModel):
     album_id: int
     confirmed: int
     line: int
 
+
 class PurchaseOrderAmmendment(BaseModel):
     purchase_order_id: int
     client_id: str
     lines: List[PurchaseOrderAmmendmentLine]
+
 
 class DispatchUpdateAmmendment(BaseModel):
     estimated_delivery: str

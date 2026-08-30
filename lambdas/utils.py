@@ -12,17 +12,21 @@ from zoneinfo import ZoneInfo
 from boto3.dynamodb.conditions import Attr
 from datetime import datetime, timedelta, date
 
+
 class HMACException(Exception):
     pass
+
 
 class NoCookieException(Exception):
     pass
 
-def broadcast(user,module,identifier):
+
+def broadcast(user: str, module: str, identifier: str):
     dynamodb = boto3.resource('dynamodb')
     sockets_table = dynamodb.Table(os.environ.get("SOCKETS_TABLE"))
 
-    merchant_sockets = sockets_table.scan(FilterExpression=Attr("user").eq(user))["Items"]
+    merchant_sockets = sockets_table.scan(
+        FilterExpression=Attr("user").eq(user))["Items"]
 
     for connection in merchant_sockets:
         api_client = boto3.client(
@@ -31,15 +35,19 @@ def broadcast(user,module,identifier):
             api_client.post_to_connection(Data=json.dumps(
                 {"module": module, "identifier": identifier}), ConnectionId=connection["connection_id"])
         except:
-            sockets_table.delete_item(Key={"connection_id":connection["connection_id"]})
+            sockets_table.delete_item(
+                Key={"connection_id": connection["connection_id"]})
+
 
 def serialize_float(obj):
     return float(obj)
 
+
 def webssocket_token():
     ws_token = uuid.uuid4()
     ws_token_hash = hashlib.sha256(str(ws_token).encode("utf-8")).hexdigest()
-    return {"ws_token": ws_token,"ws_token_hash":ws_token_hash}
+    return {"ws_token": ws_token, "ws_token_hash": ws_token_hash}
+
 
 def check_hmac(payload, request_hmac, hmac_key):
     correct_hmac = hmac.digest(hmac_key.encode(

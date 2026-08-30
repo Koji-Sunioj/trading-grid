@@ -8,18 +8,20 @@ from models import User
 from utils import webssocket_token, NoCookieException
 
 response = {}
-response['headers'] = {"Access-Control-Allow-Methods": "*"}
 dynamodb = boto3.resource('dynamodb')
 ws_token_table = dynamodb.Table(os.environ.get("WS_TOKEN_TABLE"))
+
 
 def handler(event, context):
     try:
         host = event["headers"]["Referer"]
+        response['headers'] = {"Access-Control-Allow-Methods": "*"}
+        response["headers"]["Access-Control-Allow-Credentials"] = "true"
+
         if "Origin" in event["headers"]:
             response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
             host = event["headers"]["Origin"]
 
-        response["headers"]["Access-Control-Allow-Credentials"] = "true"
         cognito = boto3.client("cognito-idp")
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
 
@@ -32,11 +34,12 @@ def handler(event, context):
                 cognito_response = cognito.get_user(AccessToken=token)
 
                 websocket = webssocket_token()
-                ws_token_table.put_item(Item={"username": cognito_response["Username"],"token_hash": websocket["ws_token_hash"], "issued": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),"from":host})
+                ws_token_table.put_item(Item={"username": cognito_response["Username"], "token_hash": websocket["ws_token_hash"], "issued": datetime.datetime.now(
+                ).strftime("%Y-%m-%d %H:%M:%S"), "from": host})
 
                 response["statusCode"] = 200
                 response["body"] = json.dumps(
-                    {"user": cognito_response["Username"],"ws_token":str(websocket["ws_token"])})
+                    {"user": cognito_response["Username"], "ws_token": str(websocket["ws_token"])})
 
             case "POST /auth":
                 if event["body"] != None:
@@ -57,14 +60,16 @@ def handler(event, context):
 
                 if cognito_response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                     websocket = webssocket_token()
-                    ws_token_table.put_item(Item={"username": body["username"],"token_hash": websocket["ws_token_hash"], "issued": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),"from":event["headers"]["Origin"]})
+                    ws_token_table.put_item(Item={"username": body["username"], "token_hash": websocket["ws_token_hash"], "issued": datetime.datetime.now(
+                    ).strftime("%Y-%m-%d %H:%M:%S"), "from": event["headers"]["Origin"]})
 
                     token = cognito_response["AuthenticationResult"]["AccessToken"]
                     token_string = "token=%s; SameSite=None; Secure; Path=/" % token
 
                     response["headers"]["Set-Cookie"] = token_string
                     response["statusCode"] = 200
-                    response["body"] = json.dumps({"message": "welcome","ws_token":str(websocket["ws_token"])})
+                    response["body"] = json.dumps(
+                        {"message": "welcome", "ws_token": str(websocket["ws_token"])})
 
                 else:
                     raise Exception("there was an error signing in.")
@@ -84,7 +89,7 @@ def handler(event, context):
             case "Exception":
                 error_message = error.__str__()
             case "ValidationError":
-                error_message = "server payload did not match schema for the requested resource"    
+                error_message = "server payload did not match schema for the requested resource"
 
         response["body"] = json.dumps({"message": error_message})
 

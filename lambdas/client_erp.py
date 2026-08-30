@@ -13,7 +13,6 @@ from boto3.dynamodb.conditions import Attr
 dynamodb = boto3.resource('dynamodb')
 po_table = dynamodb.Table(os.environ.get("PO_TABLE"))
 routing_table = dynamodb.Table(os.environ.get("ROUTING_TABLE"))
-sockets_table = dynamodb.Table(os.environ.get("SOCKETS_TABLE"))
 dispatch_table = dynamodb.Table(os.environ.get("DISPATCH_TABLE"))
 ammendments_table = dynamodb.Table(
     os.environ.get("PO_AMMENDMENT_TABLE"))
@@ -36,8 +35,8 @@ def validate(function):
                     {"message": "no body in request"})
                 return response
 
-            executed = function(*args, route_key, response)
-            return executed
+            response = function(*args, route_key, response)
+            return response
 
         except HMACException:
             response["statusCode"] = 401
@@ -134,7 +133,8 @@ def handler(event, context, route_key, response):
                 raise Exception(
                     "there was an error creating that purchase order")
 
-            broadcast("merchant","purchase-orders",payload["purchase_order_id"])
+            broadcast("merchant", "purchase-orders",
+                      payload["purchase_order_id"])
 
             response["statusCode"] = 200
             response["body"] = json.dumps(
@@ -172,14 +172,7 @@ def handler(event, context, route_key, response):
             dispatch_item["status"] = payload["status"]
             dispatch_table.put_item(Item=dispatch_item)
 
-            merchant_sockets = sockets_table.scan(
-                FilterExpression=Attr("user").eq("merchant"))["Items"]
-
-            for connection in merchant_sockets:
-                api_client = boto3.client(
-                    "apigatewaymanagementapi", endpoint_url=connection["endpoint_url"])
-                api_client.post_to_connection(Data=json.dumps(
-                    {"module": "dispatches", "identifier": dispatch_id}), ConnectionId=connection["connection_id"])
+            broadcast("merchant", "dispatches", dispatch_id)
 
             response["statusCode"] = 200
             response["body"] = json.dumps(
