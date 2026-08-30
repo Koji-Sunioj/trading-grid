@@ -46,7 +46,7 @@ def validate(function):
         except Exception as error:
             print("error name %s" % error.__class__.__name__)
             print(traceback.format_exc())
-            error_message = "an error occurred."
+            error_message = error.__str__()
 
             match error.__class__.__name__:
                 case "Exception":

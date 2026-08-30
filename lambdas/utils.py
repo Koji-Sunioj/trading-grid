@@ -8,6 +8,7 @@ import hashlib
 import datetime
 import requests
 
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 from boto3.dynamodb.conditions import Attr
 from datetime import datetime, timedelta, date
@@ -21,7 +22,7 @@ class NoCookieException(Exception):
     pass
 
 
-def broadcast(user: str, module: str, identifier: str):
+def broadcast(user: str, module: str, identifier: str) -> None:
     dynamodb = boto3.resource('dynamodb')
     sockets_table = dynamodb.Table(os.environ.get("SOCKETS_TABLE"))
 
@@ -39,31 +40,31 @@ def broadcast(user: str, module: str, identifier: str):
                 Key={"connection_id": connection["connection_id"]})
 
 
-def serialize_float(obj):
+def serialize_float(obj: Decimal) -> float:
     return float(obj)
 
 
-def webssocket_token():
+def webssocket_token() -> dict:
     ws_token = uuid.uuid4()
     ws_token_hash = hashlib.sha256(str(ws_token).encode("utf-8")).hexdigest()
     return {"ws_token": ws_token, "ws_token_hash": ws_token_hash}
 
 
-def check_hmac(payload, request_hmac, hmac_key):
+def check_hmac(payload, request_hmac, hmac_key) -> None:
     correct_hmac = hmac.digest(hmac_key.encode(
     ), payload.encode(), digest=hashlib.sha256).hex()
     if not hmac.compare_digest(request_hmac, correct_hmac):
         raise HMACException("invalid credentials")
 
 
-def search(dicts, key, value):
+def search(dicts, key, value) -> dict:
     try:
         return next(n for n in dicts if n[key] == value)
     except:
         return None
 
 
-def get_dispatch(items, client, coords, api_key):
+def get_dispatch(items, client, coords, api_key) -> dict:
     lat, long = client["coords"]["latitude"], client["coords"]["longitude"]
 
     distance_lookup = requests.get("https://api.radar.io/v1/route/distance?origin=%s&destination=%s,%s&modes=car&units=metric" % (

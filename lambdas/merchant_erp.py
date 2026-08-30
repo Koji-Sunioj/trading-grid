@@ -59,6 +59,12 @@ def validate(function):
             print(traceback.format_exc())
             error_message = error.__str__()
 
+            match error.__class__.__name__:
+                case "Exception":
+                    error_message = error.__str__()
+                case "ValidationError":
+                    error_message = "server payload did not match schema for the requested resource"
+
             response['statusCode'] = 400
             response["body"] = json.dumps({"message": error_message})
             return response

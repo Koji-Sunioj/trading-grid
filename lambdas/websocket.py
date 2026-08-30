@@ -65,7 +65,7 @@ def handler(event, context):
         print(traceback.format_exc())
 
         match error.__class__.__name__:
-            case "NotAuthorizedException" | "UserNotFoundException" | "HMACException": 
+            case "NotAuthorizedException" | "UserNotFoundException" | "HMACException" | "NoCookieException": 
                 return {"statusCode": 401}
             case _:
                 return {"statusCode": 400}
