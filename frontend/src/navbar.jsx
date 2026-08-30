@@ -1,12 +1,7 @@
-import { useLocation, Link, useNavigate } from "react-router";
+import { useLocation, Link } from "react-router";
 
-export const NavBar = ({ authorized }) => {
-  const navigate = useNavigate();
+export const NavBar = ( ) => {
   const { pathname } = useLocation();
-
-  if (authorized !== null && authorized === false && pathname !== "/") {
-    navigate("/");
-  }
 
   const routes = [];
 

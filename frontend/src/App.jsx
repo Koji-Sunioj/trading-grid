@@ -98,7 +98,7 @@ export const App = () => {
     <UserContext.Provider value={{ authorized, setAuthorized, updatedModule }}>
       <BrowserRouter>
         <div>
-          <NavBar authorized={authorized.state} />
+          <NavBar />
         </div>
         <Routes>
           <Route path="/" element={<SignIn />} />
