@@ -6,7 +6,6 @@ import json
 import boto3
 import hashlib
 import datetime
-import requests
 
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -65,6 +64,7 @@ def search(dicts, key, value) -> dict:
 
 
 def get_dispatch(items, client, coords, api_key) -> dict:
+    import requests
     lat, long = client["coords"]["latitude"], client["coords"]["longitude"]
 
     distance_lookup = requests.get("https://api.radar.io/v1/route/distance?origin=%s&destination=%s,%s&modes=car&units=metric" % (
