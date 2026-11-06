@@ -42,10 +42,6 @@ def validate(function):
                 token = event["headers"]["Cookie"].split("=")[1]
                 cognito.get_user(AccessToken=token)
 
-            #if "Origin" in event["headers"]:
-            #    response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
-            #    response["headers"]["Access-Control-Allow-Credentials"] = "true"
-
             response = function(*args, route_key, response)
             return response
 
