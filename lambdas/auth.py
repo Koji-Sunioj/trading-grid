@@ -14,6 +14,7 @@ ws_token_table = dynamodb.Table(os.environ.get("WS_TOKEN_TABLE"))
 
 def handler(event, context):
     try:
+        """
         host = event["headers"]["Referer"]
         response['headers'] = {"Access-Control-Allow-Methods": "*"}
         response["headers"]["Access-Control-Allow-Credentials"] = "true"
@@ -21,6 +22,7 @@ def handler(event, context):
         if "Origin" in event["headers"]:
             response["headers"]["Access-Control-Allow-Origin"] = event["headers"]["Origin"]
             host = event["headers"]["Origin"]
+        """
 
         cognito = boto3.client("cognito-idp")
         route_key = "%s %s" % (event["httpMethod"], event['resource'])
